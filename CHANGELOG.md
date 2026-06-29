@@ -4,13 +4,13 @@ All notable changes to Drift Zone are documented here.
 
 | Version | Date | Highlight |
 |---|---|---|
-| v3.1.0 | 2025-02-02 | Per-staff editable permissions |
-| v3.0.0 | 2025-02-01 | Firebase cloud foundation, multi-branch, PIN login |
+| v2.9.2 | 2025-02-04 | **Real fix** — Gaming Revenue reflects actual charge (markup + discount) |
+| v2.9.1 | 2025-02-03 | First attempt at discount fix (incomplete — see v2.9.2) |
 | v2.9.0 | 2025-01-31 | Live tab updates, unpaid/waived tab tracking |
 | v2.8.1 | 2025-01-30 | Top items + reorder suggestions |
 | v2.8.0 | 2025-01-30 | Inventory Evaluation tab |
 | v2.7.2 | 2025-01-29 | Critical hotfix — broken script crash |
-| v2.7.1 | 2025-01-29 | Recipe stock calculation fix |
+| v2.7.1 | 2025-01-29 | Recipe stock calculation fix (⚠ broken, see v2.7.2) |
 | v2.7.0 | 2025-01-28 | Client Tabs (running tab per customer) |
 | v2.6.0 | 2025-01-27 | Purchases tab, time package editor, factory reset |
 | v2.5.1 | 2025-01-26 | Inventory filter, sort, search |
@@ -19,26 +19,26 @@ All notable changes to Drift Zone are documented here.
 | v2.4.1 | — | Custom price per snack item |
 | v2.4.0 | — | PWA install, peak hours heatmap, receipts, shifts |
 
-## v3.1.0 — 2025-02-02
+> **Note:** v3.0.0 and v3.1.0 are an experimental Firebase/multi-branch
+> line, kept separate and not yet tested in production.
+> **Production currently runs on v2.9.2** (this is the version at repo root).
 
-- 🔐 Per-staff editable permissions — replaces fixed Owner/Staff roles with a checklist 🆕
-- 5 permission groups: Operations, Snacks & Tabs, Inventory, Money, Admin — tap a group header to toggle all at once 🆕
-- Owner always has every permission automatically — cannot be edited down 🆕
-- New staff get sensible defaults: can run sessions/snacks/tabs, cannot see money or admin sections 🆕
-- Edit any staff member's permissions anytime — tap their row in Staff & Permissions 🆕
-- Account info now shows a badge list of exactly what you personally are allowed to do 🆕
-- UI-level enforcement: buttons/tabs hide or show a clear "no permission" toast — sensitive actions (delete, factory reset, backup/restore, settings, expenses) all check permissions first 🆕
+## v2.9.2 — 2025-02-04
 
-## v3.0.0 — 2025-02-01
+- REAL FIX: Gaming Revenue now shows exactly what you actually charged — e.g. 15 min @ 50/hr with custom amount 15 now correctly shows 15, not the calculated 12.5 🆕
+- Previous v2.9.1 "discount" fix only handled discounts (charging less) — broke when charging MORE than calculated (markup). Now both directions work correctly. 🆕
+- Gaming/Snack figures in Shifts, Reports, and Profit are now always the actual amount charged — no separate math needed to find real cash 🆕
+- Discounts and Markups now shown as separate transparency lines when they occur, alongside the actual totals 🆕
+- Removed confusing duplicate "Total Revenue" vs "Actual Cash" labels — there is now one true cash figure throughout 🆕
 
-- 🔥 PHASE 2 — Stage 1: Cloud foundation with Firebase 🆕
-- Multi-branch support — create separate branches, each with isolated data 🆕
-- PIN-based login per branch — 4-digit PIN per staff member 🆕
-- Owner vs Staff roles — Owner sees Profit/Report/Evaluation/Purchases/Changelog, Staff sees day-to-day operations only 🆕
-- Staff Management screen — add/remove staff and assign PINs (Owner only) 🆕
-- Branch switcher — log out and pick a different branch or re-enter PIN 🆕
-- Import Local Data — one-time button to push this device's existing localStorage data into the cloud branch 🆕
-- NOTE: This stage only adds login + branch structure. Core data (stations, sessions, inventory, etc.) still runs on localStorage for now — full real-time sync across devices comes in Stage 2. 🆕
+## v2.9.1 — 2025-02-03
+
+- BUG FIX: Discounts/adjustments no longer silently mixed into Gaming or Snack revenue — now shown as a separate "Discounts" line everywhere (Shifts, Reports, Profit) 🆕
+- Gaming Revenue and Snack Revenue now always show full, undiscounted values for accurate breakdown 🆕
+- New "💵 Actual Cash Collected" figure — what really came in after discounts, separate from gross revenue 🆕
+- Payment Method breakdown in Shifts now correctly reflects actual cash per method, unaffected by how a session splits between gaming/snacks 🆕
+- 🗂 Tabs: Undo Checkout — reopen an accidentally-closed tab (same-day only), removes the order from revenue, items stay on the tab 🆕
+- 🗂 Tabs: Undo Mark Unpaid — reopen a tab accidentally marked as unpaid/on-credit 🆕
 
 ## v2.9.0 — 2025-01-31
 

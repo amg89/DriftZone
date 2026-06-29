@@ -4,34 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Drift Zone</title>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc,
-    updateDoc, deleteDoc, onSnapshot, query, where, orderBy, serverTimestamp,
-    enableIndexedDbPersistence, writeBatch
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCYgF4_2Ltk34FmaIc3XEdswbZR5t9iuQM",
-    authDomain: "drift-zone-cafe.firebaseapp.com",
-    projectId: "drift-zone-cafe",
-    storageBucket: "drift-zone-cafe.firebasestorage.app",
-    messagingSenderId: "159820404259",
-    appId: "1:159820404259:web:ad2ca9cc85df730bf1c396"
-  };
-
-  const fbApp = initializeApp(firebaseConfig);
-  const db = getFirestore(fbApp);
-  enableIndexedDbPersistence(db).catch(()=>{/* multiple tabs open, ignore */});
-
-  // Expose to the main (non-module) script via window
-  window.FB = {
-    db, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
-    onSnapshot, query, where, orderBy, serverTimestamp, writeBatch
-  };
-  window.dispatchEvent(new Event('firebase-ready'));
-</script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0066cc" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#00d4ff" media="(prefers-color-scheme: dark)">
@@ -328,21 +300,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 .tab-item-name{flex:1;font-size:13px;font-weight:600;}
 .tab-item-qty{font-family:'Orbitron',sans-serif;font-size:11px;color:var(--accent);width:30px;text-align:center;}
 .tab-item-price{font-family:'Orbitron',sans-serif;font-size:12px;color:var(--purple);width:65px;text-align:right;}
-/* PERMISSIONS UI */
-.perm-group{background:var(--s2);border:1px solid var(--bdr);border-radius:11px;padding:12px;margin-bottom:9px;}
-.perm-group-hd{display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px;-webkit-tap-highlight-color:transparent;}
-.perm-group-hd:hover{opacity:.8;}
-.perm-group-title{font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--accent);flex:1;}
-.perm-group-count{font-size:9px;color:var(--mut);}
-.perm-row{display:flex;align-items:center;gap:9px;padding:5px 0;}
-.perm-check{width:18px;height:18px;border-radius:5px;border:2px solid var(--bdr);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;background:var(--sur);-webkit-tap-highlight-color:transparent;}
-.perm-check.checked{background:linear-gradient(135deg,var(--accent),var(--a2));border-color:var(--accent);}
-.perm-check.checked::after{content:'✓';color:#fff;font-size:11px;font-weight:900;}
-.perm-label{font-size:12px;font-weight:600;flex:1;cursor:pointer;}
-.perm-badge-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
-.perm-mini-badge{font-size:8px;padding:1px 6px;border-radius:8px;background:rgba(0,150,255,.08);color:var(--accent);border:1px solid rgba(0,150,255,.2);}
-.owner-crown{display:inline-block;background:linear-gradient(135deg,var(--yellow),#cc9900);color:#000;border-radius:20px;font-size:8px;font-weight:700;padding:1px 7px;margin-left:5px;}
-
 /* TOAST */
 .toast{position:fixed;bottom:20px;right:20px;z-index:9999;background:var(--sur);border:1px solid var(--green);border-radius:10px;padding:10px 15px;font-size:11px;font-weight:600;color:var(--green);box-shadow:0 4px 22px var(--shd);animation:toIn .28s ease,toOut .28s ease 2.5s forwards;pointer-events:none;}
 .toast.warn{border-color:var(--orange);color:var(--orange);}
@@ -355,53 +312,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 </style>
 </head>
 <body>
-
-<!-- ═══════════ LOGIN / BRANCH SCREEN ═══════════ -->
-<div id="login-screen" style="position:fixed;inset:0;z-index:5000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;">
-  <div style="width:100%;max-width:380px;">
-    <div style="text-align:center;margin-bottom:28px;">
-      <div class="logo" style="font-size:36px;">DRIFT<span class="logo-dot"> </span>ZONE</div>
-      <div class="sub">Gaming Cafe Manager</div>
-    </div>
-
-    <!-- Connection status -->
-    <div id="login-status" style="text-align:center;font-size:11px;color:var(--mut);margin-bottom:16px;">
-      <span class="pdot"></span> Connecting to cloud...
-    </div>
-
-    <!-- STEP 1: Branch selection -->
-    <div id="login-step-branch" class="card" style="display:none;">
-      <div class="ct">🏢 Select Branch</div>
-      <div id="branch-list" style="margin-bottom:12px;"></div>
-      <div class="divx"></div>
-      <div class="ct" style="margin-bottom:10px;">＋ New Branch <span style="font-size:9px;color:var(--mut);text-transform:none;letter-spacing:0;font-weight:400">(first time setup)</span></div>
-      <div class="fg" style="margin-bottom:8px;">
-        <label>Branch Name</label>
-        <input type="text" id="new-branch-name" placeholder="e.g. Drift Zone — Maadi">
-      </div>
-      <div class="fg" style="margin-bottom:8px;">
-        <label>Owner PIN (4 digits) — for you</label>
-        <input type="text" id="new-branch-pin" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*">
-      </div>
-      <button class="btn btn-g" onclick="createBranch()" style="width:100%;">Create Branch</button>
-    </div>
-
-    <!-- STEP 2: PIN entry -->
-    <div id="login-step-pin" class="card" style="display:none;">
-      <div class="ct" id="pin-branch-label">🔑 Enter PIN</div>
-      <div style="display:flex;justify-content:center;gap:10px;margin:18px 0;">
-        <input type="password" id="pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
-          style="width:160px;text-align:center;font-size:28px;letter-spacing:14px;padding:14px;"
-          placeholder="••••" onkeyup="if(event.key==='Enter') submitPin()">
-      </div>
-      <div id="pin-error" style="display:none;color:var(--red);font-size:11px;text-align:center;margin-bottom:10px;">⚠ Incorrect PIN</div>
-      <button class="btn btn-p" onclick="submitPin()" style="width:100%;margin-bottom:8px;">Unlock</button>
-      <button class="btn btn-ghost btn-sm" onclick="backToBranchSelect()" style="width:100%;">← Switch Branch</button>
-    </div>
-  </div>
-</div>
-
-<div class="wrap" id="main-app" style="display:none;">
+<div class="wrap">
 <header>
   <div class="theme-switcher">
     <div class="theme-btn" id="tb-dark"  onclick="setTheme('dark')"  title="Dark">🌙</div>
@@ -410,8 +321,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
   </div>
   <div class="logo">DRIFT<span class="logo-dot"> </span>ZONE</div>
   <div class="sub">Gaming Cafe Manager</div>
-  <div class="ver-badge" onclick="sw('changelog')">v3.1.0 — What's New?</div>
-  <div id="session-badge" style="margin-top:6px;font-size:10px;color:var(--mut);"></div>
+  <div class="ver-badge" onclick="sw('changelog')">v2.9.2 — What's New?</div>
 </header>
 
 <div class="tabs">
@@ -792,25 +702,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 <!-- SETTINGS -->
 <div class="panel" id="panel-settings">
   <div class="card">
-    <div class="ct">👤 Account &amp; Branch</div>
-    <div id="account-info" style="background:var(--s2);border:1px solid var(--bdr);border-radius:10px;padding:13px;margin-bottom:14px;"></div>
-    <div class="btn-row">
-      <button class="btn btn-ghost" onclick="logoutUser()">🔓 Switch Branch / Log Out</button>
-    </div>
-    <div class="divx"></div>
-    <div class="ct">👥 Staff &amp; Permissions <span style="font-size:9px;color:var(--mut);text-transform:none;letter-spacing:0;font-weight:400" id="owner-only-tag-staff"></span></div>
-    <div id="staff-list" style="margin-bottom:10px;"></div>
-    <div id="add-staff-form" style="margin-bottom:0;">
-      <button class="btn btn-p btn-sm" onclick="openAddStaffModal()">＋ Add Staff Member</button>
-    </div>
-    <div class="divx"></div>
-    <div class="ct">☁️ Import Local Data <span style="font-size:9px;color:var(--mut);text-transform:none;letter-spacing:0;font-weight:400">(one-time — pulls in data saved on this device before cloud sync)</span></div>
-    <div class="btn-row">
-      <button class="btn btn-teal" onclick="importLocalDataToCloud()">⬆ Import This Device's Data Into Branch</button>
-    </div>
-  </div>
-
-  <div class="card">
     <div class="ct">General</div>
     <div class="fg2">
       <div class="fg"><label>Café Name</label><input type="text" id="cfg-name"></div>
@@ -945,26 +836,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 </div>
 
 <!-- MODAL: NEW TAB -->
-<!-- MODAL: ADD/EDIT STAFF WITH PERMISSIONS -->
-<div class="mo" id="m-staff" style="display:none" onclick="bgc(event,'m-staff')">
-  <div class="modal m-neu" style="max-width:560px">
-    <button class="mx" onclick="cm('m-staff')">✕</button>
-    <div class="mt ta" id="m-staff-t">＋ Add Staff Member</div>
-    <div class="fg2" style="margin-bottom:14px">
-      <div class="fg"><label>Name</label><input type="text" id="staff-name" placeholder="Mohamed"></div>
-      <div class="fg"><label>PIN (4 digits)</label><input type="text" id="staff-pin" maxlength="4" inputmode="numeric" placeholder="••••"></div>
-    </div>
-    <div style="background:rgba(0,150,255,.06);border:1px solid var(--accent);border-radius:9px;padding:9px 12px;margin-bottom:14px;font-size:11px;color:var(--accent)">
-      💡 Tip: tap a group header to toggle all permissions in that group at once.
-    </div>
-    <div id="perm-groups"></div>
-    <div class="btn-row">
-      <button class="btn btn-p" onclick="savePermissionedStaff()">Save Staff Member</button>
-      <button class="btn btn-ghost btn-sm" onclick="cm('m-staff')">Cancel</button>
-    </div>
-  </div>
-</div>
-
 <div class="mo" id="m-newtab" style="display:none" onclick="bgc(event,'m-newtab')">
   <div class="modal m-open">
     <button class="mx" onclick="cm('m-newtab')">✕</button>
@@ -1101,7 +972,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 
 <script>
 // ═══════════ STATE ═══════════
-const APP_VER='2.9.0';
+const APP_VER='2.9.2';
 let S={
   sessions:[],open:{},snackOrders:[],expenses:[],inventory:[],cart:{},cartPrices:{},shifts:[],purchases:[],clientTabs:[],
   settings:{
@@ -1347,17 +1218,23 @@ function doClose(){
   if(!ed||!et){toast('⚠ Enter end time',true);return;}
   const mins=diffMins(os.date,os.start,ed,et);
   if(mins<=0){toast('⚠ End must be after start',true);return;}
-  const game=os.packageMins>0?os.packageMins/60*os.rate:(mins/60)*os.rate;
+  const calcGame=os.packageMins>0?os.packageMins/60*os.rate:(mins/60)*os.rate;
   const snack=os.snacks?.reduce((a,x)=>a+x.total,0)||0;
-  const calcTotal=game+snack;
+  const calcTotal=calcGame+snack;
   const adjAmt=parseFloat(document.getElementById('c-adj').value)||0;
   const adjReason=document.getElementById('c-adj-reason').value.trim();
   const finalTotal=adjAmt>0?adjAmt:calcTotal;
+  // FIX: when a custom amount is entered, the GAMING portion becomes whatever
+  // is left after subtracting the (unchanged) snack total — this way Gaming Revenue
+  // always reflects what was actually charged, whether that's a discount OR a markup.
+  // calcGame is preserved separately purely as a reference ("what the math originally said").
+  const game=adjAmt>0?Math.max(0,finalTotal-snack):calcGame;
+  const adjustment=adjAmt>0?(finalTotal-calcTotal):0; // positive = charged more, negative = discount
   const name=S.settings.stationNames[activeIdx]||'Station '+(activeIdx+1);
-  S.sessions.push({id:Date.now(),date:os.date,endDate:ed,start:os.start,end:et,rate:os.rate,mins,game,snack,calcTotal,adjustedAmount:adjAmt>0?adjAmt:null,adjustedReason:adjAmt>0?adjReason:'',total:finalTotal,station:name,player:os.player,snacks:os.snacks||[],packageLabel:os.packageMins>0?os.packageLabel:'Open',payment:selectedPayment});
+  S.sessions.push({id:Date.now(),date:os.date,endDate:ed,start:os.start,end:et,rate:os.rate,mins,game,calcGame,snack,calcTotal,adjustment,adjustedAmount:adjAmt>0?adjAmt:null,adjustedReason:adjAmt>0?adjReason:'',total:finalTotal,station:name,player:os.player,snacks:os.snacks||[],packageLabel:os.packageMins>0?os.packageLabel:'Open',payment:selectedPayment});
   delete S.open[activeIdx];
   persist();cm('m-close');buildStations();renderSessions();
-  toast('✓ Closed — '+fmt(finalTotal)+' via '+selectedPayment);
+  toast('✓ Closed — '+fmt(finalTotal)+' via '+selectedPayment+(adjustment!==0?(adjustment<0?' (discount: '+fmt(Math.abs(adjustment))+')':' (markup: +'+fmt(adjustment)+')'):''));
 }
 
 // ═══════════ EXTEND ═══════════
@@ -1677,7 +1554,7 @@ function renderSessions(){
   }).join('');
   el.innerHTML=html;
 }
-function delSession(id){if(!hasPermission('sessions_delete')){toast('⚠ You don\'t have permission to delete sessions',true);return;}if(!confirm('Delete?')) return;S.sessions=S.sessions.filter(s=>s.id!==id);persist();renderSessions();toast('Deleted');}
+function delSession(id){if(!confirm('Delete?')) return;S.sessions=S.sessions.filter(s=>s.id!==id);persist();renderSessions();toast('Deleted');}
 
 // ═══════════ INVENTORY ═══════════
 function invFilter(cat,btn){
@@ -1818,9 +1695,9 @@ function renderExpenses(){
   if(!exps.length){list.innerHTML='<div class="empty"><div class="ei">💸</div>No expenses.</div>';return;}
   list.innerHTML=[...exps].sort((a,b)=>b.id.localeCompare(a.id)).map(x=>`<div class="exp-row"><div class="exp-info"><div class="exp-name">${x.desc}</div><div class="exp-meta">📅 ${x.date} 🏷 ${x.cat}</div></div><div class="exp-amt">${fmt(x.amount)}</div><button class="btn btn-r btn-xs" onclick="delExp('${x.id}')">✕</button></div>`).join('');
 }
-function openAddExp(){if(!hasPermission('expenses_add')){toast('⚠ You don\'t have permission to add expenses',true);return;}document.getElementById('ex-desc').value='';document.getElementById('ex-amt').value='';document.getElementById('ex-date').value=todayStr();document.getElementById('m-exp').style.display='flex';setTimeout(()=>document.getElementById('ex-desc').focus(),80);}
-function saveExp(){if(!hasPermission('expenses_add')){toast('⚠ You don\'t have permission to add expenses',true);return;}const desc=document.getElementById('ex-desc').value.trim(),amount=parseFloat(document.getElementById('ex-amt').value),date=document.getElementById('ex-date').value,cat=document.getElementById('ex-cat').value;if(!desc||!amount||!date){toast('⚠ Fill all',true);return;}S.expenses.push({id:uid(),desc,cat,amount,date});persist();cm('m-exp');renderExpenses();toast('✓ Added');}
-function delExp(id){if(!hasPermission('expenses_add')){toast('⚠ You don\'t have permission',true);return;}if(!confirm('Delete?')) return;S.expenses=S.expenses.filter(x=>x.id!==id);persist();renderExpenses();toast('Deleted');}
+function openAddExp(){document.getElementById('ex-desc').value='';document.getElementById('ex-amt').value='';document.getElementById('ex-date').value=todayStr();document.getElementById('m-exp').style.display='flex';setTimeout(()=>document.getElementById('ex-desc').focus(),80);}
+function saveExp(){const desc=document.getElementById('ex-desc').value.trim(),amount=parseFloat(document.getElementById('ex-amt').value),date=document.getElementById('ex-date').value,cat=document.getElementById('ex-cat').value;if(!desc||!amount||!date){toast('⚠ Fill all',true);return;}S.expenses.push({id:uid(),desc,cat,amount,date});persist();cm('m-exp');renderExpenses();toast('✓ Added');}
+function delExp(id){if(!confirm('Delete?')) return;S.expenses=S.expenses.filter(x=>x.id!==id);persist();renderExpenses();toast('Deleted');}
 function exportExpExcel(){const wb=XLSX.utils.book_new(),C=S.settings.currency;const ws=XLSX.utils.aoa_to_sheet([['Date','Description','Category','Amount ('+C+')'],...S.expenses.map(e=>[e.date,e.desc,e.cat,e.amount])]);ws['!cols']=[{wch:12},{wch:28},{wch:14},{wch:12}];XLSX.utils.book_append_sheet(wb,ws,'Expenses');XLSX.writeFile(wb,'DriftZone_Expenses.xlsx');toast('✓ Exported');}
 function importExpenses(e){const file=e.target.files[0];if(!file) return;const r=new FileReader();r.onload=ev=>{try{const wb=XLSX.read(ev.target.result,{type:'binary'});const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1}).slice(1);let n=0;rows.forEach(row=>{if(!row[1]) return;S.expenses.push({id:uid(),date:String(row[0]||todayStr()),desc:String(row[1]),cat:String(row[2]||'Other'),amount:parseFloat(row[3])||0});n++;});persist();renderExpenses();toast('✓ Imported '+n);}catch(err){toast('⚠ Failed',true);}e.target.value='';};r.readAsBinaryString(file);}
 
@@ -1837,10 +1714,16 @@ function renderProfit(){
   const fs=S.sessions.filter(s=>!from||!to||(s.date>=from&&s.date<=to));
   const fe=S.expenses.filter(e=>!from||!to||(e.date>=from&&e.date<=to));
   const fo=S.snackOrders.filter(o=>!from||!to||(o.date>=from&&o.date<=to));
+  // game already reflects what was ACTUALLY charged (adjustments applied at close time) — this IS actual cash, no further math needed
   const gameRev=fs.reduce((a,s)=>a+s.game,0),snackRev=fs.reduce((a,s)=>a+(s.snack||0),0)+fo.reduce((a,o)=>a+o.total,0);
-  const totalRev=gameRev+snackRev,totalExp=fe.reduce((a,e)=>a+e.amount,0),profit=totalRev-totalExp;
+  const totalRev=gameRev+snackRev; // = actual cash collected
+  const calcTotalRevenue=fs.reduce((a,s)=>a+(s.calcGame??s.game),0)+fs.reduce((a,s)=>a+(s.snack||0),0)+fo.reduce((a,o)=>a+(o.calcTotal??o.total),0);
+  const adjustmentTotal=fs.reduce((a,s)=>a+(s.adjustment||0),0)+fo.reduce((a,o)=>a+((o.calcTotal!=null&&o.adjustedAmount!=null)?(o.adjustedAmount-o.calcTotal):0),0);
+  const discountTotal=adjustmentTotal<0?Math.abs(adjustmentTotal):0;
+  const markupTotal=adjustmentTotal>0?adjustmentTotal:0;
+  const totalExp=fe.reduce((a,e)=>a+e.amount,0),profit=totalRev-totalExp;
   const margin=totalRev>0?(profit/totalRev*100):0;
-  document.getElementById('profit-stats').innerHTML=`<div class="sbox"><div class="sl">Revenue</div><div class="sv c1">${fmt(totalRev)}</div></div><div class="sbox"><div class="sl">Gaming</div><div class="sv c2">${fmt(gameRev)}</div></div><div class="sbox"><div class="sl">Snacks</div><div class="sv c4">${fmt(snackRev)}</div></div><div class="sbox"><div class="sl">Expenses</div><div class="sv c5">${fmt(totalExp)}</div></div><div class="sbox"><div class="sl">Net Profit</div><div class="sv ${profit>=0?'c1':'c5'}">${fmt(profit)}</div></div><div class="sbox"><div class="sl">Margin</div><div class="sv ${margin>=0?'c3':'c5'}">${margin.toFixed(1)}%</div></div><div class="sbox"><div class="sl">Sessions</div><div class="sv c2">${fs.length}</div></div>`;
+  document.getElementById('profit-stats').innerHTML=`<div class="sbox"><div class="sl">💵 Total Revenue (Actual)</div><div class="sv c1">${fmt(totalRev)}</div></div><div class="sbox"><div class="sl">Gaming</div><div class="sv c2">${fmt(gameRev)}</div></div><div class="sbox"><div class="sl">Snacks</div><div class="sv c4">${fmt(snackRev)}</div></div>${discountTotal>0?`<div class="sbox"><div class="sl">Discounts Given</div><div class="sv c5">-${fmt(discountTotal)}</div></div>`:''}${markupTotal>0?`<div class="sbox"><div class="sl">Markups Added</div><div class="sv c3">+${fmt(markupTotal)}</div></div>`:''}<div class="sbox"><div class="sl">Expenses</div><div class="sv c5">${fmt(totalExp)}</div></div><div class="sbox"><div class="sl">Net Profit</div><div class="sv ${profit>=0?'c1':'c5'}">${fmt(profit)}</div></div><div class="sbox"><div class="sl">Margin</div><div class="sv ${margin>=0?'c3':'c5'}">${margin.toFixed(1)}%</div></div><div class="sbox"><div class="sl">Sessions</div><div class="sv c2">${fs.length}</div></div>`;
   const mx=Math.max(totalRev,totalExp,1);
   document.getElementById('profit-bars').innerHTML=`<div class="profit-bar-wrap"><div class="pb-label">Revenue vs Expenses</div><div style="margin-bottom:6px"><div style="font-size:9px;color:var(--green);margin-bottom:2px">Revenue ${fmt(totalRev)}</div><div class="pb-track"><div class="pb-fill rev" style="width:${(totalRev/mx*100).toFixed(1)}%"></div></div></div><div><div style="font-size:9px;color:var(--red);margin-bottom:2px">Expenses ${fmt(totalExp)}</div><div class="pb-track"><div class="pb-fill exp" style="width:${(totalExp/mx*100).toFixed(1)}%"></div></div></div></div><div class="profit-bar-wrap"><div class="pb-label">Net Profit</div><div style="font-size:9px;color:${profit>=0?'var(--green)':'var(--red)'};margin-bottom:5px">${fmt(profit)}</div><div class="pb-track"><div class="pb-fill profit" style="width:${profit>=0?(profit/Math.max(totalRev,1)*100).toFixed(1):0}%"></div></div><div style="font-size:10px;color:var(--mut);margin-top:4px">Margin: <b style="color:${margin>=0?'var(--yellow)':'var(--red)'}">${margin.toFixed(1)}%</b></div></div><div class="profit-bar-wrap"><div class="pb-label">Revenue Split</div><div style="margin-bottom:5px"><div style="font-size:9px;color:var(--accent);margin-bottom:2px">Gaming ${totalRev>0?(gameRev/totalRev*100).toFixed(1):0}%</div><div class="pb-track"><div class="pb-fill" style="width:${totalRev>0?(gameRev/totalRev*100).toFixed(1):0}%;background:linear-gradient(90deg,var(--accent),var(--a2))"></div></div></div><div><div style="font-size:9px;color:var(--purple);margin-bottom:2px">Snacks ${totalRev>0?(snackRev/totalRev*100).toFixed(1):0}%</div><div class="pb-track"><div class="pb-fill" style="width:${totalRev>0?(snackRev/totalRev*100).toFixed(1):0}%;background:linear-gradient(90deg,var(--purple),#5500aa)"></div></div></div></div>`;
   const dayMap={};
@@ -1860,18 +1743,25 @@ function getReportData(from,to){
   const sessions=S.sessions.filter(s=>s.date>=from&&s.date<=to);
   const snackOrders=S.snackOrders.filter(o=>o.date>=from&&o.date<=to);
   const expenses=S.expenses.filter(e=>e.date>=from&&e.date<=to);
+  // s.game already reflects what was ACTUALLY charged — this IS actual cash, no further subtraction needed
   const gameRev=sessions.reduce((a,s)=>a+s.game,0);
   const snackRev=sessions.reduce((a,s)=>a+(s.snack||0),0)+snackOrders.reduce((a,o)=>a+o.total,0);
-  const totalRev=gameRev+snackRev,totalExp=expenses.reduce((a,e)=>a+e.amount,0),profit=totalRev-totalExp;
+  const totalRevenue=gameRev+snackRev;
+  const totalRev=totalRevenue; // = actual cash collected
+  const adjustmentTotal=sessions.reduce((a,s)=>a+(s.adjustment||0),0)
+    +snackOrders.reduce((a,o)=>a+((o.calcTotal!=null&&o.adjustedAmount!=null)?(o.adjustedAmount-o.calcTotal):0),0);
+  const discountTotal=adjustmentTotal<0?Math.abs(adjustmentTotal):0;
+  const markupTotal=adjustmentTotal>0?adjustmentTotal:0;
+  const totalExp=expenses.reduce((a,e)=>a+e.amount,0),profit=totalRev-totalExp;
   const totMins=sessions.reduce((a,s)=>a+s.mins,0);
-  return{sessions,snackOrders,expenses,gameRev,snackRev,totalRev,totalExp,profit,totMins};
+  return{sessions,snackOrders,expenses,gameRev,snackRev,totalRev,totalRevenue,discountTotal,markupTotal,totalExp,profit,totMins};
 }
 function renderReport(){
   const from=document.getElementById('rpt-from').value,to=document.getElementById('rpt-to').value;if(!from||!to) return;
-  const{sessions,snackOrders,expenses,gameRev,snackRev,totalRev,totalExp,profit,totMins}=getReportData(from,to);
+  const{sessions,snackOrders,expenses,gameRev,snackRev,totalRev,discountTotal,markupTotal,totalExp,profit,totMins}=getReportData(from,to);
   const se=document.getElementById('rpt-stats'),bo=document.getElementById('rpt-body');
   se.style.display='grid';
-  se.innerHTML=`<div class="sbox"><div class="sl">Gaming</div><div class="sv c1">${fmt(gameRev)}</div></div><div class="sbox"><div class="sl">Snacks</div><div class="sv c4">${fmt(snackRev)}</div></div><div class="sbox"><div class="sl">Total Revenue</div><div class="sv c1">${fmt(totalRev)}</div></div><div class="sbox"><div class="sl">Expenses</div><div class="sv c5">${fmt(totalExp)}</div></div><div class="sbox"><div class="sl">Net Profit</div><div class="sv ${profit>=0?'c1':'c5'}">${fmt(profit)}</div></div><div class="sbox"><div class="sl">Sessions</div><div class="sv c2">${sessions.length}</div></div><div class="sbox"><div class="sl">Hours</div><div class="sv c3">${Math.floor(totMins/60)}h ${totMins%60}m</div></div>`;
+  se.innerHTML=`<div class="sbox"><div class="sl">🎮 Gaming (actual)</div><div class="sv c1">${fmt(gameRev)}</div></div><div class="sbox"><div class="sl">🍟 Snacks (actual)</div><div class="sv c4">${fmt(snackRev)}</div></div><div class="sbox"><div class="sl">💵 Total Cash</div><div class="sv c1">${fmt(totalRev)}</div></div>${discountTotal>0?`<div class="sbox"><div class="sl">Discounts Given</div><div class="sv c5">-${fmt(discountTotal)}</div></div>`:''}${markupTotal>0?`<div class="sbox"><div class="sl">Markups Added</div><div class="sv c3">+${fmt(markupTotal)}</div></div>`:''}<div class="sbox"><div class="sl">Expenses</div><div class="sv c5">${fmt(totalExp)}</div></div><div class="sbox"><div class="sl">Net Profit</div><div class="sv ${profit>=0?'c1':'c5'}">${fmt(profit)}</div></div><div class="sbox"><div class="sl">Sessions</div><div class="sv c2">${sessions.length}</div></div><div class="sbox"><div class="sl">Hours</div><div class="sv c3">${Math.floor(totMins/60)}h ${totMins%60}m</div></div>`;
   const payIcons={Cash:'💵',VodafoneCash:'📱',Instapay:'⚡'};
   let html=`<div style="font-size:9px;color:var(--mut);margin-bottom:10px;font-family:'Orbitron',sans-serif;letter-spacing:2px">📅 ${from===to?from:from+' → '+to}</div>`;
   if(sessions.length) html+=`<div class="ct" style="margin-top:12px">Gaming Sessions</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>#</th><th>Station</th><th>Player</th><th>Package</th><th>Date</th><th>Start</th><th>End</th><th>Dur</th><th>Rate</th><th>Gaming</th><th>Snacks</th><th>Total</th><th>Pay</th></tr></thead><tbody>
@@ -1915,24 +1805,20 @@ function exportReportExcel(){
 
 // ═══════════ CHANGELOG ═══════════
 const CHANGELOG=[
-  {version:'3.1.0',date:'2025-02-02',isNew:true,changes:[
-    {text:'🔐 Per-staff editable permissions — replaces fixed Owner/Staff roles with a checklist',isNew:true},
-    {text:'5 permission groups: Operations, Snacks & Tabs, Inventory, Money, Admin — tap a group header to toggle all at once',isNew:true},
-    {text:'Owner always has every permission automatically — cannot be edited down',isNew:true},
-    {text:'New staff get sensible defaults: can run sessions/snacks/tabs, cannot see money or admin sections',isNew:true},
-    {text:'Edit any staff member\'s permissions anytime — tap their row in Staff & Permissions',isNew:true},
-    {text:'Account info now shows a badge list of exactly what you personally are allowed to do',isNew:true},
-    {text:'UI-level enforcement: buttons/tabs hide or show a clear "no permission" toast — sensitive actions (delete, factory reset, backup/restore, settings, expenses) all check permissions first',isNew:true},
+  {version:'2.9.2',date:'2025-02-04',isNew:true,changes:[
+    {text:'REAL FIX: Gaming Revenue now shows exactly what you actually charged — e.g. 15 min @ 50/hr with custom amount 15 now correctly shows 15, not the calculated 12.5',isNew:true},
+    {text:'Previous v2.9.1 "discount" fix only handled discounts (charging less) — broke when charging MORE than calculated (markup). Now both directions work correctly.',isNew:true},
+    {text:'Gaming/Snack figures in Shifts, Reports, and Profit are now always the actual amount charged — no separate math needed to find real cash',isNew:true},
+    {text:'Discounts and Markups now shown as separate transparency lines when they occur, alongside the actual totals',isNew:true},
+    {text:'Removed confusing duplicate "Total Revenue" vs "Actual Cash" labels — there is now one true cash figure throughout',isNew:true},
   ]},
-  {version:'3.0.0',date:'2025-02-01',isNew:true,changes:[
-    {text:'🔥 PHASE 2 — Stage 1: Cloud foundation with Firebase',isNew:true},
-    {text:'Multi-branch support — create separate branches, each with isolated data',isNew:true},
-    {text:'PIN-based login per branch — 4-digit PIN per staff member',isNew:true},
-    {text:'Owner vs Staff roles — Owner sees Profit/Report/Evaluation/Purchases/Changelog, Staff sees day-to-day operations only',isNew:true},
-    {text:'Staff Management screen — add/remove staff and assign PINs (Owner only)',isNew:true},
-    {text:'Branch switcher — log out and pick a different branch or re-enter PIN',isNew:true},
-    {text:'Import Local Data — one-time button to push this device\'s existing localStorage data into the cloud branch',isNew:true},
-    {text:'NOTE: This stage only adds login + branch structure. Core data (stations, sessions, inventory, etc.) still runs on localStorage for now — full real-time sync across devices comes in Stage 2.',isNew:true},
+  {version:'2.9.1',date:'2025-02-03',isNew:true,changes:[
+    {text:'BUG FIX: Discounts/adjustments no longer silently mixed into Gaming or Snack revenue — now shown as a separate "Discounts" line everywhere (Shifts, Reports, Profit)',isNew:true},
+    {text:'Gaming Revenue and Snack Revenue now always show full, undiscounted values for accurate breakdown',isNew:true},
+    {text:'New "💵 Actual Cash Collected" figure — what really came in after discounts, separate from gross revenue',isNew:true},
+    {text:'Payment Method breakdown in Shifts now correctly reflects actual cash per method, unaffected by how a session splits between gaming/snacks',isNew:true},
+    {text:'🗂 Tabs: Undo Checkout — reopen an accidentally-closed tab (same-day only), removes the order from revenue, items stay on the tab',isNew:true},
+    {text:'🗂 Tabs: Undo Mark Unpaid — reopen a tab accidentally marked as unpaid/on-credit',isNew:true},
   ]},
   {version:'2.9.0',date:'2025-01-31',isNew:true,changes:[
     {text:'BUG FIX: Client Tab card now updates live — adding/removing items, editing line totals, and adjusting amounts instantly reflect on the tab card without switching tabs',isNew:true},
@@ -2082,7 +1968,6 @@ function loadSettings(){document.getElementById('cfg-name').value=S.settings.caf
 function buildStEditor(){const n=parseInt(document.getElementById('cfg-n').value)||4,el=document.getElementById('st-editor');if(!el) return;el.innerHTML='<div class="fg2">'+Array.from({length:n},(_,i)=>`<div style="background:var(--s2);border:1px solid var(--bdr);border-radius:10px;padding:11px"><div style="font-family:'Orbitron',sans-serif;font-size:8px;color:var(--accent);margin-bottom:7px;letter-spacing:2px">STATION ${i+1}</div><div class="fg" style="margin-bottom:7px"><label>Name</label><input type="text" id="sn-${i}" value="${S.settings.stationNames[i]||'Station '+(i+1)}"></div><div class="fg"><label>Rate / hr</label><input type="number" id="sr-${i}" value="${S.settings.stationRates[i]??S.settings.defaultRate}" step="0.01" min="0"></div></div>`).join('')+'</div>';}
 document.addEventListener('change',e=>{if(e.target.id==='cfg-n') buildStEditor();});
 function saveSettings(){
-  if(!hasPermission('admin_settings')){toast('⚠ You don\'t have permission to edit settings',true);return;}
   const n=parseInt(document.getElementById('cfg-n').value)||4,names=[],rates=[];
   for(let i=0;i<n;i++){names.push(document.getElementById('sn-'+i)?.value||'Station '+(i+1));rates.push(parseFloat(document.getElementById('sr-'+i)?.value)||S.settings.defaultRate);}
   savePkgsFromEditor();
@@ -2266,7 +2151,6 @@ function savePkgsFromEditor(){
 
 // ═══════════ FACTORY RESET ═══════════
 function factoryReset(){
-  if(!hasPermission('admin_danger')){toast('⚠ You don\'t have permission for this',true);return;}
   const confirm1=confirm('⚠ FACTORY RESET\n\nThis will permanently delete ALL data:\n• Sessions & open sessions\n• Inventory items\n• Expenses\n• Purchases\n• Shifts\n• Snack orders\n• Settings\n\nThis CANNOT be undone.\n\nContinue?');
   if(!confirm1) return;
   const confirm2=confirm('Are you absolutely sure? Type OK to confirm.\n\nClick OK to WIPE EVERYTHING or Cancel to abort.');
@@ -2317,15 +2201,14 @@ function catBreakdownHTML(catMap){
 }
 
 function nukeAll(){
-  if(!hasPermission('admin_danger')){toast('⚠ You don\'t have permission for this',true);return;}
   if(!confirm('Delete all sessions, orders, expenses, purchases and shifts? Inventory and settings are kept.')) return;
   S.sessions=[];S.open={};S.snackOrders=[];S.cart={};S.cartPrices={};S.shifts=[];S.purchases=[];
   S.clientTabs=S.clientTabs.filter(t=>t.status==='closed'); // keep history, close open tabs
   S.expenses=S.expenses.filter(e=>!e.purchaseId);
   persist();buildStations();renderSessions();renderOrders();renderPurchases();renderTabsPanel();renderReport();toast('Cleared');
 }
-function backupData(){if(!hasPermission('admin_backup')){toast('⚠ You don\'t have permission for this',true);return;}const blob=new Blob([JSON.stringify({version:APP_VER,exportedAt:new Date().toISOString(),...S},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='DriftZone_Backup_'+todayStr()+'.json';a.click();URL.revokeObjectURL(a.href);toast('✓ Backup downloaded');}
-function restoreData(e){if(!hasPermission('admin_backup')){toast('⚠ You don\'t have permission for this',true);e.target.value='';return;}const file=e.target.files[0];if(!file) return;if(!confirm('Replace all data?')){e.target.value='';return;}const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);['sessions','open','snackOrders','expenses','inventory','settings'].forEach(k=>{if(d[k]) S[k]=d[k];});persist();buildStations();renderSessions();renderExpenses();renderInventory();renderReport();renderOrders();if(S.settings.theme) setTheme(S.settings.theme);toast('✓ Restored!');}catch(err){toast('⚠ Invalid file',true);}e.target.value='';};r.readAsText(file);}
+function backupData(){const blob=new Blob([JSON.stringify({version:APP_VER,exportedAt:new Date().toISOString(),...S},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='DriftZone_Backup_'+todayStr()+'.json';a.click();URL.revokeObjectURL(a.href);toast('✓ Backup downloaded');}
+function restoreData(e){const file=e.target.files[0];if(!file) return;if(!confirm('Replace all data?')){e.target.value='';return;}const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);['sessions','open','snackOrders','expenses','inventory','settings'].forEach(k=>{if(d[k]) S[k]=d[k];});persist();buildStations();renderSessions();renderExpenses();renderInventory();renderReport();renderOrders();if(S.settings.theme) setTheme(S.settings.theme);toast('✓ Restored!');}catch(err){toast('⚠ Invalid file',true);}e.target.value='';};r.readAsText(file);}
 
 // ═══════════ TABS ═══════════
 const TABS=['stations','tabs','snacks','orders','sessions','inventory','purchases','expenses','profit','report','heatmap','shifts','evaluation','changelog','settings'];
@@ -2440,8 +2323,18 @@ function renderUnpaidTabs(){
       <div class="btn-row" style="margin-top:0">
         <button class="btn btn-g btn-sm" onclick="collectUnpaidPayment('${t.id}')">💰 Collect Payment</button>
         <button class="btn btn-ghost btn-sm" onclick="waiveUnpaidTab('${t.id}')" style="color:var(--orange);border-color:var(--orange)">🤝 Waive</button>
+        <button class="btn btn-ghost btn-xs" onclick="undoMarkUnpaid('${t.id}')" style="color:var(--mut)">↩ Undo (reopen tab)</button>
       </div>
     </div>`).join('');
+}
+function undoMarkUnpaid(tabId){
+  const t=S.clientTabs.find(x=>x.id===tabId);if(!t) return;
+  if(!confirm(`Reopen ${t.name}'s tab? It will no longer be tracked as unpaid.`)) return;
+  t.status='open';
+  delete t.closedAt;delete t.closedDate;delete t.finalTotal;delete t.payment;
+  delete t.adjustedAmount;delete t.adjustedReason;delete t.calcTotal;
+  persist();renderTabsPanel();
+  toast(`↩ ${t.name}'s tab reopened`);
 }
 function collectUnpaidPayment(tabId){
   const t=S.clientTabs.find(x=>x.id===tabId);if(!t) return;
@@ -2710,6 +2603,7 @@ function renderClosedTabs(){
   el.innerHTML=closed.map((t,i)=>{
     const isWaived=t.status==='waived';
     const wasCollectedDebt=t.collectedAt;
+    const canUndo=t.closedDate===todayStr(); // same-day undo only, to protect historical reports
     return `<div style="background:${isWaived?'rgba(255,140,0,.05)':'var(--s2)'};border:1px solid ${isWaived?'var(--orange)':'var(--bdr)'};border-radius:10px;padding:11px;margin-bottom:7px;animation:slideIn .25s ease">
       <div style="display:flex;align-items:center;gap:10px">
         <div style="width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,${isWaived?'var(--orange),#995500':'var(--purple),#5500aa'});display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:#fff">${closed.length-i}</div>
@@ -2720,8 +2614,24 @@ function renderClosedTabs(){
         </div>
         <div style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:900;color:${isWaived?'var(--orange)':'var(--purple)'}">${fmt(t.finalTotal||0)}</div>
       </div>
+      ${canUndo&&!isWaived?`<div class="btn-row" style="margin-top:8px"><button class="btn btn-ghost btn-xs" onclick="undoTabCheckout('${t.id}')" style="color:var(--orange);border-color:var(--orange)">↩ Undo Checkout</button></div>`:''}
+      ${!canUndo&&!isWaived?`<div style="font-size:9px;color:var(--mut);margin-top:6px">↩ Undo only available same-day this was closed</div>`:''}
     </div>`;
   }).join('');
+}
+async function undoTabCheckout(tabId){
+  const t=S.clientTabs.find(x=>x.id===tabId);if(!t) return;
+  if(!confirm(`Undo checkout for ${t.name}? This reopens the tab and removes the ${fmt(t.finalTotal||0)} order from revenue. Items stay on the tab — stock is not affected.`)) return;
+  // Remove the linked snack order created at checkout time
+  // Match by clientTab name + same date + same total (closest unique signature we have)
+  const matchIdx=S.snackOrders.findIndex(o=>o.isTab&&o.clientTab===t.name&&o.date===t.date&&Math.abs((o.total||0)-(t.finalTotal||0))<0.01);
+  if(matchIdx>-1) S.snackOrders.splice(matchIdx,1);
+  // Reopen the tab
+  t.status='open';
+  delete t.closedAt;delete t.closedDate;delete t.finalTotal;delete t.payment;
+  delete t.adjustedAmount;delete t.adjustedReason;delete t.calcTotal;
+  persist();renderTabsPanel();renderOrders();
+  toast(`↩ Checkout undone — ${t.name}'s tab is open again`);
 }
 function clearTabFilter(){
   document.getElementById('ctab-from').value='';
@@ -3188,13 +3098,24 @@ function shiftRevenue(sh){
     const ts=parseInt(o.id.split('_')[0]);
     return ts>=sh.startTs&&ts<=endTs;
   });
-  const gameRev=sessInShift.reduce((a,s)=>a+s.game,0);
-  const sessSnackRev=sessInShift.reduce((a,s)=>a+(s.snack||0),0);
-  const standaloneSnackRev=ordersInShift.reduce((a,o)=>a+o.total,0);
-  const snackRev=sessSnackRev+standaloneSnackRev;
-  const totalRev=gameRev+snackRev;
+  // s.game already reflects what was ACTUALLY charged (adjustments applied at close) — this IS actual cash.
+  const gameRevenue=sessInShift.reduce((a,s)=>a+s.game,0);
+  const sessSnackRevenue=sessInShift.reduce((a,s)=>a+(s.snack||0),0);
+  const standaloneSnackRevenue=ordersInShift.reduce((a,o)=>a+o.total,0);
+  const snackRevenue=sessSnackRevenue+standaloneSnackRevenue;
+  const totalCash=gameRevenue+snackRevenue; // = actual cash collected, no further subtraction needed
+  // Adjustment total — for transparency only (shows how much was discounted/marked up vs calculated math)
+  const adjustmentTotal=sessInShift.reduce((a,s)=>a+(s.adjustment||0),0)
+    +ordersInShift.reduce((a,o)=>a+((o.calcTotal!=null&&o.adjustedAmount!=null)?(o.adjustedAmount-o.calcTotal):0),0);
+  const discountTotal=adjustmentTotal<0?Math.abs(adjustmentTotal):0;
+  const markupTotal=adjustmentTotal>0?adjustmentTotal:0;
+  const totalRevenue=totalCash; // kept for naming clarity in callers
 
-  // Payment breakdown
+  // Keep old names for backward compatibility with existing callers, but now accurate:
+  const gameRev=gameRevenue,snackRev=snackRevenue,totalRev=totalCash;
+
+  // Payment breakdown — uses ACTUAL CASH (s.total / o.total).
+  // This is real cash collected per method, unaffected by how it splits between gaming/snacks.
   const payBreakdown={};
   PAY_METHODS.forEach(m=>{payBreakdown[m]={total:0,count:0};});
   sessInShift.forEach(s=>{
@@ -3210,7 +3131,7 @@ function shiftRevenue(sh){
     payBreakdown[m].count++;
   });
 
-  return{sessInShift,ordersInShift,gameRev,snackRev,totalRev,payBreakdown};
+  return{sessInShift,ordersInShift,gameRev,snackRev,totalRev,payBreakdown,gameRevenue,snackRevenue,totalRevenue,discountTotal,markupTotal,totalCash};
 }
 
 function payBreakdownHTML(pb){
@@ -3232,18 +3153,20 @@ function renderShifts(){
 
   if(openShift){
     const m=Math.round((Date.now()-openShift.startTs)/60000);
-    const{sessInShift,ordersInShift,gameRev,snackRev,totalRev,payBreakdown}=shiftRevenue(openShift);
+    const{sessInShift,ordersInShift,gameRevenue,snackRevenue,discountTotal,markupTotal,totalCash,payBreakdown}=shiftRevenue(openShift);
     statusEl.innerHTML=`<span class="badge bg2" style="font-size:10px;padding:4px 12px"><span class="pdot"></span> SHIFT OPEN</span>`;
     currentEl.innerHTML=`<div class="shift-open-card">
       <div style="font-family:'Orbitron',sans-serif;font-size:12px;color:var(--green);margin-bottom:12px">● CURRENT SHIFT — ${openShift.staff||'Staff'}</div>
       <div class="fg2" style="margin-bottom:14px">
         <div><div style="font-size:9px;color:var(--mut);letter-spacing:2px;text-transform:uppercase">Started</div><div style="font-weight:700">${openShift.date} ${openShift.startTime}</div></div>
         <div><div style="font-size:9px;color:var(--mut);letter-spacing:2px;text-transform:uppercase">Duration</div><div style="font-weight:700;font-family:'Orbitron',sans-serif;color:var(--yellow)">${fmtDur(m)}</div></div>
-        <div><div style="font-size:9px;color:var(--mut);letter-spacing:2px;text-transform:uppercase">Gaming Revenue</div><div style="font-weight:700;color:var(--accent)">${fmt(gameRev)} (${sessInShift.length} sess)</div></div>
-        <div><div style="font-size:9px;color:var(--mut);letter-spacing:2px;text-transform:uppercase">Snack Revenue</div><div style="font-weight:700;color:var(--purple)">${fmt(snackRev)} (${ordersInShift.length} orders)</div></div>
-        <div><div style="font-size:9px;color:var(--mut);letter-spacing:2px;text-transform:uppercase">Total Revenue</div><div style="font-weight:900;font-family:'Orbitron',sans-serif;color:var(--green)">${fmt(totalRev)}</div></div>
+        <div><div style="font-size:9px;color:var(--mut);letter-spacing:2px;text-transform:uppercase">🎮 Gaming (actual)</div><div style="font-weight:700;color:var(--accent)">${fmt(gameRevenue)} (${sessInShift.length} sess)</div></div>
+        <div><div style="font-size:9px;color:var(--mut);letter-spacing:2px;text-transform:uppercase">🍟 Snacks (actual)</div><div style="font-weight:700;color:var(--purple)">${fmt(snackRevenue)} (${ordersInShift.length} orders)</div></div>
+        ${discountTotal>0?`<div><div style="font-size:9px;color:var(--red);letter-spacing:2px;text-transform:uppercase">Discounts Given</div><div style="font-weight:700;font-family:'Orbitron',sans-serif;color:var(--red)">-${fmt(discountTotal)}</div></div>`:''}
+        ${markupTotal>0?`<div><div style="font-size:9px;color:var(--yellow);letter-spacing:2px;text-transform:uppercase">Markups Added</div><div style="font-weight:700;font-family:'Orbitron',sans-serif;color:var(--yellow)">+${fmt(markupTotal)}</div></div>`:''}
+        <div><div style="font-size:9px;color:var(--mut);letter-spacing:2px;text-transform:uppercase">💵 Total Cash Collected</div><div style="font-weight:900;font-family:'Orbitron',sans-serif;color:var(--green);font-size:16px">${fmt(totalCash)}</div></div>
       </div>
-      <div style="font-size:9px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;margin-bottom:8px">💳 Payment Breakdown</div>
+      <div style="font-size:9px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;margin-bottom:8px">💳 Payment Breakdown <span style="font-weight:400;text-transform:none;letter-spacing:0">(actual cash by method)</span></div>
       <div style="background:var(--sur);border-radius:10px;padding:4px 12px;margin-bottom:12px">
         ${payBreakdownHTML(payBreakdown)}
       </div>
@@ -3275,7 +3198,7 @@ function renderShifts(){
   const histEl=document.getElementById('shift-history');
   if(!closed.length){histEl.innerHTML='<div class="empty"><div class="ei">👥</div>No closed shifts yet.</div>';return;}
   histEl.innerHTML=closed.map((s,i)=>{
-    const{sessInShift,ordersInShift,gameRev,snackRev,totalRev,payBreakdown}=shiftRevenue(s);
+    const{sessInShift,ordersInShift,gameRevenue,snackRevenue,discountTotal,markupTotal,totalCash,payBreakdown}=shiftRevenue(s);
     const mins=s.endTs?Math.round((s.endTs-s.startTs)/60000):0;
     const payRow=PAY_METHODS.filter(m=>payBreakdown[m]?.count>0).map(m=>`${PAY_ICONS[m]} ${m}: ${fmt(payBreakdown[m].total)} (${payBreakdown[m].count})`).join(' &nbsp;|&nbsp; ');
     const catMap=catRevenueBreakdown(sessInShift,ordersInShift);
@@ -3288,13 +3211,16 @@ function renderShifts(){
           <div class="shift-name">${s.staff||'—'}</div>
           <div class="shift-meta">${s.date} &nbsp; ${s.startTime} → ${s.endTime||'?'} &nbsp; ${fmtDur(mins)}</div>
         </div>
-        <div class="shift-rev">${fmt(totalRev)}</div>
+        <div class="shift-rev">${fmt(totalCash)}</div>
         <button class="btn btn-ghost btn-xs" onclick="toggleShiftDetail('${shiftCardId}')">▸ Details</button>
         <button class="btn btn-r btn-xs" onclick="deleteShift('${s.id}')">✕</button>
       </div>
       <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:11px;margin-bottom:6px">
-        <span style="color:var(--accent)">🎮 Gaming: ${fmt(gameRev)} (${sessInShift.length} sess)</span>
-        <span style="color:var(--purple)">🍟 Snacks: ${fmt(snackRev)} (${ordersInShift.length} orders)</span>
+        <span style="color:var(--accent)">🎮 Gaming: ${fmt(gameRevenue)} (${sessInShift.length} sess)</span>
+        <span style="color:var(--purple)">🍟 Snacks: ${fmt(snackRevenue)} (${ordersInShift.length} orders)</span>
+        ${discountTotal>0?`<span style="color:var(--red)">💸 Discounts: -${fmt(discountTotal)}</span>`:''}
+        ${markupTotal>0?`<span style="color:var(--yellow)">📈 Markups: +${fmt(markupTotal)}</span>`:''}
+        <span style="color:var(--green);font-weight:700">💵 Cash: ${fmt(totalCash)}</span>
       </div>
       <div style="font-size:10px;color:var(--mut);margin-bottom:0">${payRow||'No payment data'}</div>
       <div id="${shiftCardId}" style="display:none;margin-top:10px;border-top:1px solid var(--bdr);padding-top:10px">
@@ -3331,361 +3257,18 @@ function toggleShiftDetail(id){
 
 // ═══════════ CHANGELOG ADDITION ═══════════
 
-// ═══════════ FIREBASE: BRANCH + PIN AUTH ═══════════
-let currentBranchId=localStorage.getItem('dz_branchId')||null;
-let currentBranchName=localStorage.getItem('dz_branchName')||null;
-let currentStaff=null; // {id,name,role,pin} once logged in
-let fbReady=false;
-let unsubscribers=[]; // active onSnapshot listeners, cleared on logout
-
-function getFB(){return window.FB;}
-
-window.addEventListener('firebase-ready',()=>{
-  fbReady=true;
-  document.getElementById('login-status').innerHTML='<span style="color:var(--green)">●</span> Connected to cloud';
-  startLoginFlow();
-});
-// Fallback in case the event already fired before listener attached
-if(window.FB){ fbReady=true; setTimeout(startLoginFlow,50); }
-
-async function startLoginFlow(){
-  // Check if we already have a remembered branch + staff session this device
-  const savedStaffId=sessionStorage.getItem('dz_staffId');
-  if(currentBranchId&&savedStaffId){
-    try{
-      const FB=getFB();
-      const staffSnap=await FB.getDoc(FB.doc(FB.db,'branches',currentBranchId,'staff',savedStaffId));
-      if(staffSnap.exists()){
-        currentStaff={id:savedStaffId,...staffSnap.data()};
-        return enterApp();
-      }
-    }catch(e){/* fall through to branch picker */}
-  }
-  showBranchPicker();
-}
-
-async function showBranchPicker(){
-  document.getElementById('login-step-pin').style.display='none';
-  document.getElementById('login-step-branch').style.display='block';
-  const FB=getFB();
-  const listEl=document.getElementById('branch-list');
-  listEl.innerHTML='<div style="text-align:center;color:var(--mut);font-size:11px;padding:10px">Loading branches…</div>';
-  try{
-    const snap=await FB.getDocs(FB.collection(FB.db,'branches'));
-    if(snap.empty){
-      listEl.innerHTML='<div class="empty" style="padding:14px"><div class="ei">🏢</div>No branches yet. Create your first one below.</div>';
-      return;
-    }
-    listEl.innerHTML=snap.docs.map(d=>{
-      const data=d.data();
-      return `<div class="mrow" style="margin-bottom:7px" onclick="selectBranch('${d.id}','${(data.name||'Branch').replace(/'/g,"\\'")}')">
-        <span style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--accent);flex:1">🏢 ${data.name||'Branch'}</span>
-        <span style="font-size:9px;color:var(--mut)">Tap to enter →</span>
-      </div>`;
-    }).join('');
-  }catch(e){
-    listEl.innerHTML='<div class="empty" style="padding:14px;color:var(--red)"><div class="ei">⚠</div>Could not load branches. Check connection.</div>';
-  }
-}
-function selectBranch(branchId,branchName){
-  currentBranchId=branchId;currentBranchName=branchName;
-  localStorage.setItem('dz_branchId',branchId);
-  localStorage.setItem('dz_branchName',branchName);
-  document.getElementById('login-step-branch').style.display='none';
-  document.getElementById('login-step-pin').style.display='block';
-  document.getElementById('pin-branch-label').textContent='🔑 '+branchName;
-  document.getElementById('pin-input').value='';
-  document.getElementById('pin-error').style.display='none';
-  setTimeout(()=>document.getElementById('pin-input').focus(),100);
-}
-function backToBranchSelect(){
-  currentBranchId=null;currentBranchName=null;
-  localStorage.removeItem('dz_branchId');localStorage.removeItem('dz_branchName');
-  showBranchPicker();
-}
-async function createBranch(){
-  const name=document.getElementById('new-branch-name').value.trim();
-  const pin=document.getElementById('new-branch-pin').value.trim();
-  if(!name){toast('⚠ Enter a branch name',true);return;}
-  if(!/^\d{4}$/.test(pin)){toast('⚠ PIN must be exactly 4 digits',true);return;}
-  const FB=getFB();
-  try{
-    const branchRef=await FB.addDoc(FB.collection(FB.db,'branches'),{name,createdAt:FB.serverTimestamp()});
-    // Create owner staff record
-    await FB.addDoc(FB.collection(FB.db,'branches',branchRef.id,'staff'),{name:'Owner',pin,role:'owner',createdAt:FB.serverTimestamp()});
-    // Seed default settings doc
-    await FB.setDoc(FB.doc(FB.db,'branches',branchRef.id,'meta','settings'),{
-      cafeName:name,currency:'$',defaultRate:10,numStations:4,
-      stationNames:['PS5 #1','PS5 #2','PS4 #1','PS4 #2'],stationRates:[10,10,10,10],theme:'light',
-      timePackages:[{label:'Open',mins:0},{label:'15 min',mins:15},{label:'30 min',mins:30},{label:'1 hour',mins:60},{label:'2 hours',mins:120},{label:'3 hours',mins:180}]
-    });
-    toast('✓ Branch created!');
-    selectBranch(branchRef.id,name);
-  }catch(e){
-    toast('⚠ Failed to create branch: '+e.message,true);
-  }
-}
-async function submitPin(){
-  const pin=document.getElementById('pin-input').value.trim();
-  if(!/^\d{4}$/.test(pin)){toast('⚠ Enter a 4-digit PIN',true);return;}
-  const FB=getFB();
-  try{
-    const snap=await FB.getDocs(FB.collection(FB.db,'branches',currentBranchId,'staff'));
-    const match=snap.docs.find(d=>d.data().pin===pin);
-    if(!match){
-      document.getElementById('pin-error').style.display='block';
-      document.getElementById('pin-input').value='';
-      return;
-    }
-    currentStaff={id:match.id,...match.data()};
-    sessionStorage.setItem('dz_staffId',match.id);
-    enterApp();
-  }catch(e){
-    toast('⚠ Login failed: '+e.message,true);
-  }
-}
-function logoutUser(){
-  unsubscribers.forEach(u=>u());unsubscribers=[];
-  sessionStorage.removeItem('dz_staffId');
-  currentStaff=null;
-  document.getElementById('main-app').style.display='none';
-  document.getElementById('login-screen').style.display='flex';
-  backToBranchSelect();
-}
-
-function enterApp(){
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('main-app').style.display='block';
-  const badge=document.getElementById('session-badge');
-  if(badge) badge.innerHTML=`🏢 ${currentBranchName} &nbsp;·&nbsp; 👤 ${currentStaff.name} (${currentStaff.role==='owner'?'Owner':'Staff'})`;
-  applyRolePermissions();
-  // Stage 1: still load from localStorage for now (Stage 2 will wire Firestore listeners per-section)
-  load();
-  setTheme(S.settings.theme||'light');
-  const td=todayStr();
-  document.getElementById('rpt-from').value=td;
-  document.getElementById('rpt-to').value=td;
-  buildStations();
-  renderReport();
-  startClock();
-  updateLowStockBadge();
-  setInterval(updateLowStockBadge,30000);
-  renderTabsPanel();
-  renderAccountInfo();
-  renderStaffList();
-}
-// ═══════════ PERMISSION SYSTEM ═══════════
-const PERMISSION_GROUPS=[
-  {key:'operations',title:'🎮 Operations',perms:[
-    {key:'sessions_manage',label:'Open / close sessions'},
-    {key:'sessions_extend',label:'Extend sessions'},
-    {key:'sessions_adjust',label:'Adjust session price'},
-    {key:'sessions_delete',label:'Delete sessions'},
-  ]},
-  {key:'snacks_tabs',title:'🍟 Snacks & Tabs',perms:[
-    {key:'snacks_orders',label:'Add snack/drink orders'},
-    {key:'tabs_manage',label:'Manage client tabs'},
-    {key:'tabs_unpaid_waive',label:'Mark tabs unpaid / waive debt'},
-  ]},
-  {key:'inventory',title:'📦 Inventory',perms:[
-    {key:'inventory_view',label:'View inventory'},
-    {key:'inventory_stock',label:'Add / adjust stock'},
-    {key:'inventory_edit_price',label:'Edit price & cost'},
-    {key:'inventory_recipes',label:'Manage recipes'},
-  ]},
-  {key:'money',title:'💰 Money',perms:[
-    {key:'expenses_view',label:'View expenses'},
-    {key:'expenses_add',label:'Add expenses'},
-    {key:'money_reports',label:'View profit, reports & evaluation'},
-  ]},
-  {key:'admin',title:'🛠 Admin',perms:[
-    {key:'admin_staff',label:'Manage staff & permissions'},
-    {key:'admin_settings',label:'Edit settings'},
-    {key:'admin_backup',label:'Backup / restore'},
-    {key:'admin_danger',label:'Danger zone (delete / factory reset)'},
-  ]},
-];
-const ALL_PERMISSION_KEYS=PERMISSION_GROUPS.flatMap(g=>g.perms.map(p=>p.key));
-function defaultStaffPermissions(){
-  // Sensible default for a new staff member: operational basics, nothing financial/admin
-  return{
-    sessions_manage:true,sessions_extend:true,sessions_adjust:false,sessions_delete:false,
-    snacks_orders:true,tabs_manage:true,tabs_unpaid_waive:false,
-    inventory_view:true,inventory_stock:true,inventory_edit_price:false,inventory_recipes:false,
-    expenses_view:false,expenses_add:false,money_reports:false,
-    admin_staff:false,admin_settings:false,admin_backup:false,admin_danger:false,
-  };
-}
-function ownerPermissions(){
-  const all={};ALL_PERMISSION_KEYS.forEach(k=>all[k]=true);return all;
-}
-function hasPermission(key){
-  if(!currentStaff) return false;
-  if(currentStaff.role==='owner') return true;
-  return !!(currentStaff.permissions&&currentStaff.permissions[key]);
-}
-let editingStaffId=null;
-let workingPermissions=null;
-
-function buildPermGroupsUI(){
-  const el=document.getElementById('perm-groups');if(!el) return;
-  el.innerHTML=PERMISSION_GROUPS.map(g=>{
-    const checkedCount=g.perms.filter(p=>workingPermissions[p.key]).length;
-    return `<div class="perm-group">
-      <div class="perm-group-hd" onclick="toggleGroup('${g.key}')">
-        <div class="perm-group-title">${g.title}</div>
-        <div class="perm-group-count">${checkedCount}/${g.perms.length}</div>
-      </div>
-      ${g.perms.map(p=>`<div class="perm-row">
-        <div class="perm-check ${workingPermissions[p.key]?'checked':''}" onclick="togglePerm('${p.key}')" id="permchk-${p.key}"></div>
-        <label class="perm-label" onclick="togglePerm('${p.key}')">${p.label}</label>
-      </div>`).join('')}
-    </div>`;
-  }).join('');
-}
-function togglePerm(key){
-  workingPermissions[key]=!workingPermissions[key];
-  buildPermGroupsUI();
-}
-function toggleGroup(groupKey){
-  const group=PERMISSION_GROUPS.find(g=>g.key===groupKey);if(!group) return;
-  const allChecked=group.perms.every(p=>workingPermissions[p.key]);
-  group.perms.forEach(p=>{workingPermissions[p.key]=!allChecked;});
-  buildPermGroupsUI();
-}
-function openAddStaffModal(){
-  editingStaffId=null;
-  workingPermissions=defaultStaffPermissions();
-  document.getElementById('m-staff-t').textContent='＋ Add Staff Member';
-  document.getElementById('staff-name').value='';
-  document.getElementById('staff-pin').value='';
-  buildPermGroupsUI();
-  document.getElementById('m-staff').style.display='flex';
-  setTimeout(()=>document.getElementById('staff-name').focus(),80);
-}
-async function openEditStaffModal(staffId){
-  const FB=getFB();
-  try{
-    const snap=await FB.getDoc(FB.doc(FB.db,'branches',currentBranchId,'staff',staffId));
-    if(!snap.exists()) return;
-    const s=snap.data();
-    editingStaffId=staffId;
-    workingPermissions=s.role==='owner'?ownerPermissions():{...defaultStaffPermissions(),...(s.permissions||{})};
-    document.getElementById('m-staff-t').textContent='Edit — '+s.name;
-    document.getElementById('staff-name').value=s.name;
-    document.getElementById('staff-pin').value=s.pin;
-    buildPermGroupsUI();
-    document.getElementById('m-staff').style.display='flex';
-  }catch(e){toast('⚠ Failed to load staff member',true);}
-}
-async function savePermissionedStaff(){
-  const name=document.getElementById('staff-name').value.trim();
-  const pin=document.getElementById('staff-pin').value.trim();
-  if(!name){toast('⚠ Enter a name',true);return;}
-  if(!/^\d{4}$/.test(pin)){toast('⚠ PIN must be 4 digits',true);return;}
-  const FB=getFB();
-  try{
-    const data={name,pin,role:'staff',permissions:workingPermissions,updatedAt:FB.serverTimestamp()};
-    if(editingStaffId){
-      await FB.updateDoc(FB.doc(FB.db,'branches',currentBranchId,'staff',editingStaffId),data);
-      toast('✓ Staff member updated');
-    }else{
-      data.createdAt=FB.serverTimestamp();
-      await FB.addDoc(FB.collection(FB.db,'branches',currentBranchId,'staff'),data);
-      toast('✓ Staff member added');
-    }
-    cm('m-staff');
-    renderStaffList();
-  }catch(e){toast('⚠ Failed: '+e.message,true);}
-}
-
-function applyRolePermissions(){
-  const isOwner=currentStaff?.role==='owner';
-  // Tabs gated by money_reports permission (or owner)
-  ['tab-profit','tab-report','tab-evaluation','tab-purchases'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.style.display=(isOwner||hasPermission('money_reports'))?'':'none';
-  });
-  // Expenses tab gated by expenses_view
-  const expTab=document.getElementById('tab-expenses');
-  if(expTab) expTab.style.display=(isOwner||hasPermission('expenses_view')||hasPermission('expenses_add'))?'':'none';
-  // Changelog always visible to everyone
-  const ownerTag=document.getElementById('owner-only-tag-staff');
-  if(ownerTag) ownerTag.textContent=isOwner?'':'(owner only)';
-  const staffForm=document.getElementById('add-staff-form');
-  if(staffForm) staffForm.style.display=(isOwner||hasPermission('admin_staff'))?'block':'none';
-  // Settings sections gated by admin_settings
-  document.querySelectorAll('#panel-settings .card').forEach((card,i)=>{
-    if(i===0) return; // Account & Branch card always visible
-    card.style.display=(isOwner||hasPermission('admin_settings'))?'':'none';
-  });
-}
-function renderAccountInfo(){
-  const el=document.getElementById('account-info');if(!el) return;
-  el.innerHTML=`
-    <div style="font-size:13px;font-weight:700;margin-bottom:4px">👤 ${currentStaff.name}${currentStaff.role==='owner'?'<span class="owner-crown">👑 OWNER</span>':''}</div>
-    <div style="font-size:11px;color:var(--mut)">Branch: <b style="color:var(--accent)">${currentBranchName}</b></div>
-    ${currentStaff.role!=='owner'?`<div class="perm-badge-row">${ALL_PERMISSION_KEYS.filter(k=>hasPermission(k)).map(k=>{const p=PERMISSION_GROUPS.flatMap(g=>g.perms).find(x=>x.key===k);return p?`<span class="perm-mini-badge">${p.label}</span>`:'';}).join('')}</div>`:''}`;
-}
-async function renderStaffList(){
-  const el=document.getElementById('staff-list');if(!el) return;
-  if(!(currentStaff.role==='owner'||hasPermission('admin_staff'))){el.innerHTML='<div style="font-size:11px;color:var(--mut)">You don\'t have permission to manage staff.</div>';return;}
-  const FB=getFB();
-  try{
-    const snap=await FB.getDocs(FB.collection(FB.db,'branches',currentBranchId,'staff'));
-    el.innerHTML=snap.docs.map(d=>{
-      const s=d.data();
-      const isOwnerRow=s.role==='owner';
-      const permCount=isOwnerRow?ALL_PERMISSION_KEYS.length:ALL_PERMISSION_KEYS.filter(k=>s.permissions&&s.permissions[k]).length;
-      return `<div class="exp-row" style="cursor:pointer" onclick="${isOwnerRow?'':`openEditStaffModal('${d.id}')`}">
-        <div class="exp-info">
-          <div class="exp-name">${s.name}${isOwnerRow?'<span class="owner-crown">👑 OWNER</span>':''}</div>
-          <div class="exp-meta">PIN: ${s.pin} · ${isOwnerRow?'All permissions':permCount+'/'+ALL_PERMISSION_KEYS.length+' permissions — tap to edit'}</div>
-        </div>
-        ${!isOwnerRow?`<button class="btn btn-r btn-xs" onclick="event.stopPropagation();removeStaffMember('${d.id}')">✕</button>`:''}
-      </div>`;
-    }).join('');
-  }catch(e){el.innerHTML='<div style="color:var(--red);font-size:11px">Failed to load staff list.</div>';}
-}
-async function removeStaffMember(staffId){
-  if(!confirm('Remove this staff member?')) return;
-  const FB=getFB();
-  try{
-    await FB.deleteDoc(FB.doc(FB.db,'branches',currentBranchId,'staff',staffId));
-    renderStaffList();toast('Removed');
-  }catch(e){toast('⚠ Failed: '+e.message,true);}
-}
-async function importLocalDataToCloud(){
-  if(!confirm("Import this device's local data (sessions, inventory, expenses, etc.) into the current branch? This adds to whatever is already in the cloud — it does not overwrite.")) return;
-  const FB=getFB();
-  try{
-    const batch=FB.writeBatch(FB.db);
-    let count=0;
-    // Inventory
-    S.inventory.forEach(it=>{
-      const ref=FB.doc(FB.collection(FB.db,'branches',currentBranchId,'inventory'),it.id);
-      batch.set(ref,it);count++;
-    });
-    // Sessions
-    S.sessions.forEach(s=>{
-      const ref=FB.doc(FB.collection(FB.db,'branches',currentBranchId,'sessions'),String(s.id));
-      batch.set(ref,s);count++;
-    });
-    // Expenses
-    S.expenses.forEach(ex=>{
-      const ref=FB.doc(FB.collection(FB.db,'branches',currentBranchId,'expenses'),ex.id);
-      batch.set(ref,ex);count++;
-    });
-    await batch.commit();
-    toast(`✓ Imported ${count} records into ${currentBranchName}`);
-  }catch(e){
-    toast('⚠ Import failed: '+e.message,true);
-  }
-}
-
-// ═══════════ INIT (now gated behind login) ═══════════
-// load(), setTheme(), buildStations() etc. now run inside enterApp() above,
-// only after a branch + PIN are confirmed. See startLoginFlow().
+// ═══════════ INIT ═══════════
+load();
+setTheme(S.settings.theme||'light');
+const td=todayStr();
+document.getElementById('rpt-from').value=td;
+document.getElementById('rpt-to').value=td;
+buildStations();
+renderReport();
+startClock();
+updateLowStockBadge();
+setInterval(updateLowStockBadge, 30000);
+renderTabsPanel();
 </script>
 </body>
 </html>

@@ -2,7 +2,8 @@
 
 A single-file web app for running a PlayStation/gaming café: station sessions, snacks & drinks, client tabs, inventory with recipes, expenses, purchases, shifts, and profit reporting.
 
-**Current version: v3.1.0** (Phase 2, Stage 1 — Firebase cloud foundation + per-staff permissions)
+**Current version: v2.9.2** (production — localStorage based)
+**Experimental branch: v3.1.0** (Firebase multi-branch + permissions — not yet production tested)
 
 ---
 
