@@ -360,7 +360,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
   </div>
   <div class="logo">DRIFT<span class="logo-dot"> </span>ZONE</div>
   <div class="sub">Gaming Cafe Manager</div>
-  <div class="ver-badge" onclick="sw('changelog')">v2.9.25 — What's New?</div>
+  <div class="ver-badge" onclick="sw('changelog')">v2.9.17 — What's New?</div>
   <div class="ver-badge" id="current-staff-badge" onclick="switchUser()" style="cursor:pointer" title="Tap to switch user">👤 —</div>
 </header>
 
@@ -429,11 +429,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 <div class="panel" id="panel-snacks">
   <div class="card">
     <div class="ct">🍟 Snacks &amp; Drinks</div>
-    <input type="text" id="menu-search" placeholder="🔍 Search items…" oninput="buildMenuGrid()" style="width:100%;background:var(--inp);border:1px solid var(--bdr);color:var(--txt);border-radius:9px;padding:9px 12px;font-size:13px;margin-bottom:9px;font-family:inherit">
-    <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--mut);margin-bottom:9px;user-select:none">
-      <input type="checkbox" id="menu-hide-oos" onchange="buildMenuGrid()" style="width:15px;height:15px;cursor:pointer">
-      Hide out of stock
-    </label>
     <div class="filter-bar" id="snack-filter-bar">
       <button class="fbtn active-f" onclick="fmenu('all',this)">All</button>
       <button class="fbtn" onclick="fmenu('snack',this)">🍿 Snacks</button>
@@ -552,10 +547,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
           <option value="cat">Category</option>
         </select>
       </div>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--mut);user-select:none;white-space:nowrap">
-        <input type="checkbox" id="inv-hide-oos" onchange="renderInventory()" style="width:15px;height:15px;cursor:pointer">
-        Hide out of stock
-      </label>
     </div>
     <div id="inv-wrap"></div>
   </div>
@@ -782,13 +773,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
       <button class="btn btn-p" onclick="saveSettings()">Save All Settings</button>
       <button class="btn btn-teal" onclick="backupData()">⬇ Backup</button>
       <button class="btn btn-ghost" onclick="document.getElementById('restore-input').click()">⬆ Restore</button>
-    </div>
-    <div class="divx"></div>
-    <div class="ct">📊 Storage Health <span style="font-size:9px;color:var(--mut);text-transform:none;letter-spacing:0;font-weight:400">(check this if things stop updating without a refresh)</span></div>
-    <div id="storage-health-body" style="margin-bottom:10px"></div>
-    <div class="btn-row">
-      <button class="btn btn-ghost btn-sm" onclick="checkStorageHealth()">🔄 Re-check</button>
-      <button class="btn btn-ghost btn-sm" onclick="clearOldSnapshots()">🗑 Clear Old Auto-Snapshots</button>
     </div>
     <div class="divx"></div>
     <div class="ct">🕐 Automatic Daily Snapshots</div>
@@ -1075,7 +1059,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 
 <script>
 // ═══════════ STATE ═══════════
-const APP_VER='2.9.25';
+const APP_VER='2.9.17';
 let S={
   sessions:[],open:{},snackOrders:[],expenses:[],inventory:[],cart:{},cartPrices:{},shifts:[],purchases:[],clientTabs:[],
   staff:[],activityLog:[], // v2.9.10: local staff PIN + activity log
@@ -1125,34 +1109,7 @@ function load(){
     }
   }catch(e){}
 }
-// FIX (v2.9.25): persist() had NO error handling at all. If localStorage
-// write fails (most commonly: quota exceeded — very plausible after
-// months of daily auto-snapshots accumulating), the exception would
-// propagate up and silently halt whatever code was supposed to run
-// AFTER persist() in the calling function — including all the screen
-// refresh calls. That produces exactly "need to refresh almost every
-// tab" and inconsistent-looking data, with no visible error at all.
-// Now every key saves independently (one failure doesn't block the
-// rest) and a real, visible warning appears instead of silent failure.
-let persistFailureWarned=false;
-function persist(){
-  const keys=['sessions','open','snackOrders','expenses','inventory','settings','shifts','purchases','clientTabs','staff','activityLog'];
-  let anyFailed=false;
-  keys.forEach(k=>{
-    try{
-      localStorage.setItem('psc_'+k,JSON.stringify(S[k]));
-    }catch(e){
-      anyFailed=true;
-      console.error('persist() failed to save "'+k+'":',e);
-    }
-  });
-  if(anyFailed&&!persistFailureWarned){
-    persistFailureWarned=true; // avoid spamming a toast on every single action
-    toast('⚠ SAVE FAILED — your device storage may be full. Check Settings → Storage, and back up immediately.',true);
-  }else if(!anyFailed){
-    persistFailureWarned=false; // recovered — allow warning again if it fails later
-  }
-}
+function persist(){['sessions','open','snackOrders','expenses','inventory','settings','shifts','purchases','clientTabs','staff','activityLog'].forEach(k=>{localStorage.setItem('psc_'+k,JSON.stringify(S[k]));});}
 
 // ═══════════ HELPERS ═══════════
 const cur=()=>S.settings.currency;
@@ -1515,30 +1472,17 @@ function stockLabel(it){
 function buildMenuGrid(){
   const g=document.getElementById('menu-grid');if(!g) return;
   const isIndomieVariant=cat=>cat==='indomie'||cat==='indomie_double'||cat==='indomie_ready';
-  const searchTerm=(document.getElementById('menu-search')?.value||'').trim().toLowerCase();
-  const hideOOS=document.getElementById('menu-hide-oos')?.checked;
   const items=S.inventory.filter(x=>{
     if(x.cat==='other') return false;
-    if(menuFilter!=='all'){
-      if(menuFilter==='indomie'){ if(!isIndomieVariant(x.cat)) return false; }
-      else if(x.cat!==menuFilter) return false;
-    }
-    if(searchTerm&&!x.name.toLowerCase().includes(searchTerm)) return false;
-    if(hideOOS&&effectiveStock(x)<=0) return false;
-    return true;
+    if(menuFilter==='all') return true;
+    if(menuFilter==='indomie') return isIndomieVariant(x.cat);
+    return x.cat===menuFilter;
   });
-  if(!items.length){
-    const reason=searchTerm?`No items match "${searchTerm}"`:(hideOOS?'No items in stock right now':'No items. Add in Inventory tab.');
-    g.innerHTML=`<div style="color:var(--mut);font-size:10px;grid-column:1/-1;text-align:center;padding:14px">${reason}</div>`;
-    return;
-  }
-  // FIX: out-of-stock graying was broken — a style="..." attribute was
-  // being smashed as literal text inside the class attribute instead of
-  // being its own real attribute, so the browser never applied it.
+  if(!items.length){g.innerHTML='<div style="color:var(--mut);font-size:10px;grid-column:1/-1;text-align:center;padding:14px">No items. Add in Inventory tab.</div>';return;}
   g.innerHTML=items.map(it=>{
     const eff=effectiveStock(it);
     const unavail=eff<=0;
-    return `<div class="mi ${S.cart[it.id]?'sel':''}" onclick="toggleCart('${it.id}')" style="${unavail?'opacity:.5;cursor:not-allowed':''}">
+    return `<div class="mi ${S.cart[it.id]?'sel':''} ${unavail?'style="opacity:.5;cursor:not-allowed"':''}" onclick="toggleCart('${it.id}')">
       <div class="mi-icon">${it.icon||'📦'}</div><div class="mi-name">${it.name}</div>
       <div class="mi-price">${fmt(it.price)}</div>
       <div class="mi-stock" style="color:${unavail?'var(--red)':'var(--mut)'}">${stockLabel(it)}</div>
@@ -1827,16 +1771,13 @@ function renderInventory(){
   const el=document.getElementById('inv-wrap');if(!el) return;
   const search=(document.getElementById('inv-search')?.value||'').toLowerCase().trim();
   const sortVal=document.getElementById('inv-sort')?.value||'name-asc';
-  const hideOOS=document.getElementById('inv-hide-oos')?.checked;
   const isIndomieVariant=cat=>cat==='indomie'||cat==='indomie_double'||cat==='indomie_ready';
   // Filter
   let items=S.inventory.filter(it=>{
     if(invFilterCat==='low') return it.stock>0&&it.stock<=(it.lowAlert||5)||it.stock===0;
-    if(invFilterCat==='all'){}
-    else if(invFilterCat==='indomie'){ if(!isIndomieVariant(it.cat)) return false; }
-    else if(it.cat!==invFilterCat) return false;
-    if(hideOOS&&effectiveStock(it)<=0) return false;
-    return true;
+    if(invFilterCat==='all') return true;
+    if(invFilterCat==='indomie') return isIndomieVariant(it.cat);
+    return it.cat===invFilterCat;
   });
   // Search
   if(search) items=items.filter(it=>it.name.toLowerCase().includes(search)||(it.cat||'').toLowerCase().includes(search));
@@ -2182,38 +2123,7 @@ function exportReportExcel(){
 
 // ═══════════ CHANGELOG ═══════════
 const CHANGELOG=[
-  {version:'2.9.25',date:'2025-02-27',isNew:true,changes:[
-    {text:'LIKELY ROOT CAUSE FOUND for "needs refresh everywhere" bugs: persist() (the function that saves every change) had NO error handling. If browser storage was full/failing, saves would silently break partway through — halting whatever screen updates were supposed to happen right after, with zero visible error. This matches every symptom reported so far.',isNew:true},
-    {text:'persist() now saves each piece of data independently (one failure does not block the rest) and shows a real, visible warning if a save fails, instead of failing silently',isNew:true},
-    {text:'NEW: Settings → 📊 Storage Health — shows exactly how much browser storage is used, broken down by data type, with a warning bar before things actually start failing',isNew:true},
-    {text:'NEW: "Clear Old Auto-Snapshots" button — frees up space immediately without touching your actual café data (sessions, inventory, etc. are untouched)',isNew:true},
-    {text:'Daily auto-snapshot retention reduced from 10 days to 5 — halves this feature\'s own storage footprint, since months of accumulated daily snapshots were a likely contributor to hitting browser storage limits',isNew:true},
-    {text:'App now proactively warns at startup if storage is already critically full, instead of only showing the problem after you happen to open Settings',isNew:true},
-  ]},
-  {version:'2.9.24',date:'2025-02-26',isNew:false,changes:[
-    {text:'NEW: "Hide out of stock" toggle added to the Inventory tab too, next to Search and Sort — matches the same toggle already in the Snacks Order menu',isNew:true},
-    {text:'Correctly accounts for recipe-based items (uses "can make" quantity, not just the raw stock field) — consistent with how availability is judged everywhere else in the app',isNew:true},
-  ]},
-  {version:'2.9.23',date:'2025-02-25',isNew:false,changes:[
-    {text:'NEW: "Hide out of stock" toggle in the Snacks Order menu, next to the search box — hides unavailable items entirely instead of just graying them out, for a cleaner selection view during a rush',isNew:true},
-    {text:'Works together with search and category filters — combine all three to narrow down fast',isNew:true},
-  ]},
-  {version:'2.9.22',date:'2025-02-24',isNew:false,changes:[
-    {text:'NEW: Search box added to the Snacks Order menu — filter items by name, works together with the existing category filter buttons',isNew:true},
-    {text:'BUG FIX (re-applied): out-of-stock graying in the Snacks menu was broken again after the v2.9.17 rollback (same malformed-HTML bug fixed once before in the abandoned v2.9.19) — fixed properly this time, verified in the same pass as the search feature',isNew:true},
-  ]},
-  {version:'2.9.21',date:'2025-02-23',isNew:false,changes:[
-    {text:'Re-applied two empty-bottle bug fixes that were lost when v2.9.20 rebuilt on the v2.9.17 base (they were originally fixed in v2.9.19, which got abandoned along with the sync feature)',isNew:true},
-    {text:'BUG FIX: Purchase form\'s "Empties returned" field only matched Quantity at the moment an item was selected — changing Quantity afterward (e.g. to 24 for a crate) never updated it, silently recording the wrong empties count on nearly every purchase',isNew:true},
-    {text:'BUG FIX: Deleting an open tab returned items to stock but did not reverse the empty-bottle credit for returnable-bottle items, inflating empty counts',isNew:true},
-    {text:'Verified all other empty-bottle hook points (checkout, tab add/remove/adjust) are intact — this version has been checked against every known empty-bottle bug fixed so far',isNew:true},
-  ]},
-  {version:'2.9.20',date:'2025-02-22',isNew:false,changes:[
-    {text:'ROLLED BACK: Remote Dashboard sync (v2.9.18) caused real problems — tab items not updating without a manual refresh, and snack checkout incorrectly saying the cart was empty. That entire feature (and the Firebase/dashboard sync code) has been fully removed. This version is built on the confirmed-stable v2.9.17 base.',isNew:true},
-    {text:'BUG FIX: found the actual cause of "restore brings the bug back" — Restore Backup only ever refreshed 6 of the app\'s 18+ view panels (Sessions, Expenses, Inventory, Report, Orders, Stations). Everything else — Shifts, Tabs, Purchases, Evaluation, Staff, Activity Log, low-stock badge — stayed stale until a manual page refresh, which looked exactly like the sync bug even though it is a separate, older issue.',isNew:true},
-    {text:'Restore Backup and Restore Auto-Snapshot now automatically reload the page right after restoring, guaranteeing every panel shows fresh data — the same reliable path as a normal app launch, instead of a manually-maintained (and clearly incomplete) list of refresh calls',isNew:true},
-  ]},
-  {version:'2.9.17',date:'2025-02-19',isNew:false,changes:[
+  {version:'2.9.17',date:'2025-02-19',isNew:true,changes:[
     {text:'BUG FIX: Adding a returnable-bottle item (e.g. Cola) directly to a client tab did not add an empty to the linked item — only the main cart checkout and tab quantity +/- were wired up. Now covered for every path: new item on a tab, +1 to an existing tab item, and removing an item correctly reverses it too',isNew:true},
     {text:'NEW: Orders, tabs, and sessions can no longer be started or checked out without an open shift — starting a session, checking out the cart, opening a new tab, adding to a tab, and checking out a tab all now require an active shift first, so revenue always has a shift to reconcile against',isNew:true},
     {text:'Closing or extending an already-open session is NOT blocked even without a shift open, so nobody gets stuck unable to close out a station',isNew:true},
@@ -2234,7 +2144,7 @@ const CHANGELOG=[
     {text:'NEW: Shift breakdown (both the live open shift and closed shift history) now expands Gaming revenue into a per-device breakdown — see PS5 vs SIM vs whatever else side by side, not just one combined Gaming total',isNew:true},
   ]},
   {version:'2.9.13',date:'2025-02-15',isNew:false,changes:[
-    {text:'NEW: Device Type per station — set each station\'s device (PS5, PS4, PS3, Xbox, SIM, PC, Other) in Settings → Station editor',isNew:true},
+    {text:'NEW: Device Type per station — set each station\'s device (PS5, PS4, PS3, Xbox, SIM, PC, Other) in Settings \u2192 Station editor',isNew:true},
     {text:'NEW: Sessions tab now has a Device filter — view only PS5 sessions, only SIM sessions, etc, alongside the existing date range filter',isNew:true},
     {text:'Session list (both live and closed) now shows a device badge on every row so it is clear at a glance which type of station it was',isNew:true},
     {text:'Existing sessions from before this update default to PS5 for the device badge/filter — edit a station\'s Device Type in Settings if that is not accurate for your setup',isNew:true},
@@ -2457,7 +2367,7 @@ const CHANGELOG=[
 function renderChangelog(){const el=document.getElementById('changelog-body');if(!el) return;el.innerHTML=CHANGELOG.map(v=>`<div class="cl-entry"><div class="cl-ver">v${v.version}${v.isNew?` <span class="cl-new">LATEST</span>`:''}</div><div class="cl-date">${v.date}</div>${v.changes.map(c=>`<div class="cl-item">${c.text||c}${c.isNew?` <span class="cl-new">NEW</span>`:''}</div>`).join('')}</div>`).join('');}
 
 // ═══════════ SETTINGS ═══════════
-function loadSettings(){document.getElementById('cfg-name').value=S.settings.cafeName;document.getElementById('cfg-cur').value=S.settings.currency;document.getElementById('cfg-rate').value=S.settings.defaultRate;document.getElementById('cfg-n').value=S.settings.numStations;document.getElementById('cfg-alarm').checked=S.settings.alarmEnabled!==false;buildStEditor();buildPkgEditor();renderAutoSnapshots();renderStaffManagement();renderActivityLog();checkStorageHealth();}
+function loadSettings(){document.getElementById('cfg-name').value=S.settings.cafeName;document.getElementById('cfg-cur').value=S.settings.currency;document.getElementById('cfg-rate').value=S.settings.defaultRate;document.getElementById('cfg-n').value=S.settings.numStations;document.getElementById('cfg-alarm').checked=S.settings.alarmEnabled!==false;buildStEditor();buildPkgEditor();renderAutoSnapshots();renderStaffManagement();renderActivityLog();}
 function buildStEditor(){const n=parseInt(document.getElementById('cfg-n').value)||4,el=document.getElementById('st-editor');if(!el) return;
   // Suggest previously-used device types as a datalist (autocomplete),
   // but the field is free text — type anything you want.
@@ -2556,19 +2466,6 @@ function syncPurFromQtyOrCost(input){
   const cost=parseFloat(row.querySelector('.pur-cost')?.value)||0;
   const tot=row.querySelector('.pur-total');
   if(tot) tot.value=(qty*cost).toFixed(2);
-  // BUG FIX (v2.9.19, re-applied in v2.9.21 after the v2.9.17 rollback):
-  // "Empties returned" was only ever set once, at the moment the item was
-  // first selected (defaulting to whatever qty was at that instant —
-  // usually 1). Changing Qty afterward (e.g. to 24 for a crate) never
-  // updated it, so the empties count silently stayed wrong on every
-  // purchase where qty was adjusted after selection. Now qty changes keep
-  // it in sync; adjust it manually AFTER finalizing qty if fewer empties
-  // were actually handed back (breakage/loss).
-  const emptiesRow=row.querySelector('.pur-empties-row');
-  if(emptiesRow&&emptiesRow.style.display!=='none'){
-    const emptiesInput=row.querySelector('.pur-empties');
-    if(emptiesInput) emptiesInput.value=qty;
-  }
   updatePurTotal();
 }
 function syncPurFromTotal(input){
@@ -2768,35 +2665,12 @@ function nukeAll(){
   persist();buildStations();renderSessions();renderOrders();renderPurchases();renderTabsPanel();renderReport();toast('Cleared');
 }
 function backupData(){const blob=new Blob([JSON.stringify({version:APP_VER,exportedAt:new Date().toISOString(),...S},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='DriftZone_Backup_'+todayStr()+'.json';a.click();URL.revokeObjectURL(a.href);S.settings.lastManualBackupAt=Date.now();persist();hideBackupReminder();toast('✓ Backup downloaded');}
-// FIX (v2.9.20): restore only ever refreshed 6 of the 18+ view functions
-// in the app (Sessions, Expenses, Inventory, Report, Orders, Stations) —
-// everything else (Shifts, Tabs, Purchases, Evaluation, Staff, Activity
-// Log, low-stock badge, etc.) stayed stale until a manual page refresh.
-// That's exactly the "have to close and refresh" symptom. Rather than
-// manually maintain a list of render calls (which is exactly how this
-// bug happened — a function got missed, and will keep happening as more
-// panels get added), this now reloads the page after restoring, which
-// guarantees every panel renders fresh from the newly-restored data —
-// the same code path as a normal app launch, which is already known to
-// work correctly.
-function restoreData(e){
-  const file=e.target.files[0];if(!file) return;
-  if(!confirm('Replace all data? The app will reload automatically once restored.')){e.target.value='';return;}
-  const r=new FileReader();
-  r.onload=ev=>{
-    try{
-      const d=JSON.parse(ev.target.result);
-      ['sessions','open','snackOrders','expenses','inventory','settings','shifts','purchases','clientTabs','staff','activityLog'].forEach(k=>{if(d[k]) S[k]=d[k];});
-      persist();
-      toast('✓ Restored — reloading…');
-      setTimeout(()=>location.reload(),700);
-    }catch(err){
-      toast('⚠ Invalid file',true);
-      e.target.value='';
-    }
-  };
-  r.readAsText(file);
-}
+// FIX (v2.9.5): restore was silently dropping shifts, purchases, and
+// clientTabs even though backupData() saves them — a restore after real
+// data loss would have quietly lost shift history, purchase records, and
+// open/closed client tabs with no error shown. Now restores everything
+// backupData() actually writes.
+function restoreData(e){const file=e.target.files[0];if(!file) return;if(!confirm('Replace all data?')){e.target.value='';return;}const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);['sessions','open','snackOrders','expenses','inventory','settings','shifts','purchases','clientTabs','staff','activityLog'].forEach(k=>{if(d[k]) S[k]=d[k];});persist();buildStations();renderSessions();renderExpenses();renderInventory();renderReport();renderOrders();if(S.settings.theme) setTheme(S.settings.theme);toast('✓ Restored!');}catch(err){toast('⚠ Invalid file',true);}e.target.value='';};r.readAsText(file);}
 
 // ═══════════ TABS ═══════════
 const TABS=['stations','tabs','snacks','orders','sessions','inventory','purchases','expenses','profit','report','heatmap','shifts','evaluation','changelog','settings'];
@@ -3190,11 +3064,6 @@ function deleteOpenTab(){
       inv.recipe.forEach(r=>{const ing=S.inventory.find(i=>i.id===r.ingredientId);if(ing) ing.stock+=r.qty*item.qty;});
     }else{
       inv.stock+=item.qty;
-    }
-    // This item's sale never happened — undo the empty-bottle side effect too
-    if(inv.linkedEmptyId){
-      const empty=S.inventory.find(x=>x.id===inv.linkedEmptyId);
-      if(empty) empty.stock=Math.max(0,empty.stock-item.qty);
     }
   });
   S.clientTabs=S.clientTabs.filter(x=>x.id!==activeTabId);
@@ -3998,7 +3867,7 @@ function toggleShiftDetail(id){
 //     survives this device dying/being stolen/localStorage getting cleared.
 // We do NOT silently auto-download a file every day — that would clutter
 // the Downloads folder and feels like a surprise rather than a safety net.
-const MAX_SNAPSHOTS=5; // v2.9.25: reduced from 10 — halves storage footprint of this feature after it was identified as a likely contributor to hitting browser storage limits over months of daily use
+const MAX_SNAPSHOTS=10; // ~10 days of rotating history; keeps localStorage usage bounded
 
 function takeDailySnapshotIfNeeded(){
   const today=todayStr();
@@ -4033,14 +3902,14 @@ function renderAutoSnapshots(){
   }).join('');
 }
 function restoreAutoSnapshot(idx){
-  if(!confirm('Replace current data with this automatic snapshot? This cannot be undone (consider downloading a manual backup of your CURRENT data first). The app will reload automatically once restored.')) return;
+  if(!confirm('Replace current data with this automatic snapshot? This cannot be undone (consider downloading a manual backup of your CURRENT data first).')) return;
   try{
     const snaps=JSON.parse(localStorage.getItem('psc_autoSnapshots')||'[]');
     const snap=snaps[idx];if(!snap) return;
     Object.assign(S,snap.data);
-    persist();
-    toast('✓ Restored from '+snap.date+' — reloading…');
-    setTimeout(()=>location.reload(),700);
+    persist();buildStations();renderSessions();renderExpenses();renderInventory();renderReport();renderOrders();renderShifts();renderPurchases();renderTabsPanel();
+    if(S.settings.theme) setTheme(S.settings.theme);
+    toast('✓ Restored from '+snap.date+' auto-snapshot');
   }catch(e){ toast('⚠ Could not restore snapshot',true); }
 }
 
@@ -4061,65 +3930,6 @@ function checkBackupReminder(){
   }else{
     banner.style.display='none';
   }
-}
-
-// ═══════════ STORAGE HEALTH (v2.9.25) ═══════════
-// Direct response to real save failures — gives a visible way to see
-// how much localStorage space is used and where it's going, since
-// "why did things stop updating" was previously invisible and only
-// showed up as mysterious stale-UI bugs.
-function getStorageBreakdown(){
-  const breakdown=[];
-  let totalBytes=0;
-  for(let i=0;i<localStorage.length;i++){
-    const key=localStorage.key(i);
-    if(!key.startsWith('psc_')) continue;
-    const val=localStorage.getItem(key)||'';
-    const bytes=new Blob([val]).size;
-    totalBytes+=bytes;
-    breakdown.push({key:key.replace('psc_',''),bytes});
-  }
-  breakdown.sort((a,b)=>b.bytes-a.bytes);
-  return{breakdown,totalBytes};
-}
-function fmtBytes(b){
-  if(b<1024) return b+' B';
-  if(b<1024*1024) return (b/1024).toFixed(1)+' KB';
-  return (b/1024/1024).toFixed(2)+' MB';
-}
-function checkStorageHealth(){
-  const el=document.getElementById('storage-health-body');if(!el) return;
-  const{breakdown,totalBytes}=getStorageBreakdown();
-  // Most browsers give ~5-10MB per origin for localStorage. Using 5MB as
-  // the conservative baseline so the warning fires before things actually
-  // start failing, not after.
-  const ASSUMED_QUOTA=5*1024*1024;
-  const pct=Math.min(100,(totalBytes/ASSUMED_QUOTA*100));
-  const isHigh=pct>=70;
-  const isCritical=pct>=90;
-  let snaps=[];
-  try{ snaps=JSON.parse(localStorage.getItem('psc_autoSnapshots')||'[]'); }catch(e){}
-  el.innerHTML=`
-    <div style="background:var(--sur);border-radius:8px;padding:10px;margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px">
-        <span>Estimated usage</span>
-        <span style="font-weight:700;color:${isCritical?'var(--red)':(isHigh?'var(--orange)':'var(--green)')}">${fmtBytes(totalBytes)} (~${pct.toFixed(0)}% of typical browser limit)</span>
-      </div>
-      <div style="background:var(--bdr);border-radius:6px;height:6px;overflow:hidden">
-        <div style="background:${isCritical?'var(--red)':(isHigh?'var(--orange)':'var(--green)')};height:100%;width:${pct}%"></div>
-      </div>
-      ${isHigh?`<p style="font-size:10px;color:${isCritical?'var(--red)':'var(--orange)'};margin-top:6px">${isCritical?'⚠ CRITICAL — saves may already be failing silently. Back up now and clear old auto-snapshots below.':'⚠ Getting full — worth clearing old auto-snapshots soon.'}</p>`:''}
-    </div>
-    <div style="font-size:10px;color:var(--mut);margin-bottom:4px">By data type:</div>
-    ${breakdown.map(b=>`<div style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>${b.key}${b.key==='autoSnapshots'?' ('+snaps.length+' days)':''}</span><span>${fmtBytes(b.bytes)}</span></div>`).join('')}
-  `;
-}
-function clearOldSnapshots(){
-  if(!confirm('Clear all automatic daily snapshots? This frees up storage space. Your actual café data (sessions, inventory, etc.) is NOT affected — only the daily safety-net copies are removed.')) return;
-  localStorage.removeItem('psc_autoSnapshots');
-  toast('✓ Old auto-snapshots cleared');
-  checkStorageHealth();
-  renderAutoSnapshots();
 }
 
 // ═══════════ STAFF PIN + ACTIVITY LOG (v2.9.10) ═══════════
@@ -4285,17 +4095,6 @@ renderTabsPanel();
 takeDailySnapshotIfNeeded();
 checkBackupReminder();
 initStaffGate();
-// Proactive check — if storage is already critically full at startup,
-// warn immediately rather than waiting for the user to open Settings
-// and discover it only after something has already failed to save.
-(function(){
-  try{
-    const{totalBytes}=getStorageBreakdown();
-    if(totalBytes>4.5*1024*1024){ // >90% of the assumed 5MB baseline
-      setTimeout(()=>toast('⚠ Storage is nearly full — go to Settings → Storage Health and clear old auto-snapshots',true),1500);
-    }
-  }catch(e){/* diagnostic only, never block startup on this */}
-})();
 </script>
 </body>
 </html>

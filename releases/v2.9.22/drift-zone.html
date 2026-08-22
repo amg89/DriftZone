@@ -360,7 +360,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
   </div>
   <div class="logo">DRIFT<span class="logo-dot"> </span>ZONE</div>
   <div class="sub">Gaming Cafe Manager</div>
-  <div class="ver-badge" onclick="sw('changelog')">v2.9.25 — What's New?</div>
+  <div class="ver-badge" onclick="sw('changelog')">v2.9.22 — What's New?</div>
   <div class="ver-badge" id="current-staff-badge" onclick="switchUser()" style="cursor:pointer" title="Tap to switch user">👤 —</div>
 </header>
 
@@ -430,10 +430,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
   <div class="card">
     <div class="ct">🍟 Snacks &amp; Drinks</div>
     <input type="text" id="menu-search" placeholder="🔍 Search items…" oninput="buildMenuGrid()" style="width:100%;background:var(--inp);border:1px solid var(--bdr);color:var(--txt);border-radius:9px;padding:9px 12px;font-size:13px;margin-bottom:9px;font-family:inherit">
-    <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--mut);margin-bottom:9px;user-select:none">
-      <input type="checkbox" id="menu-hide-oos" onchange="buildMenuGrid()" style="width:15px;height:15px;cursor:pointer">
-      Hide out of stock
-    </label>
     <div class="filter-bar" id="snack-filter-bar">
       <button class="fbtn active-f" onclick="fmenu('all',this)">All</button>
       <button class="fbtn" onclick="fmenu('snack',this)">🍿 Snacks</button>
@@ -552,10 +548,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
           <option value="cat">Category</option>
         </select>
       </div>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--mut);user-select:none;white-space:nowrap">
-        <input type="checkbox" id="inv-hide-oos" onchange="renderInventory()" style="width:15px;height:15px;cursor:pointer">
-        Hide out of stock
-      </label>
     </div>
     <div id="inv-wrap"></div>
   </div>
@@ -782,13 +774,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
       <button class="btn btn-p" onclick="saveSettings()">Save All Settings</button>
       <button class="btn btn-teal" onclick="backupData()">⬇ Backup</button>
       <button class="btn btn-ghost" onclick="document.getElementById('restore-input').click()">⬆ Restore</button>
-    </div>
-    <div class="divx"></div>
-    <div class="ct">📊 Storage Health <span style="font-size:9px;color:var(--mut);text-transform:none;letter-spacing:0;font-weight:400">(check this if things stop updating without a refresh)</span></div>
-    <div id="storage-health-body" style="margin-bottom:10px"></div>
-    <div class="btn-row">
-      <button class="btn btn-ghost btn-sm" onclick="checkStorageHealth()">🔄 Re-check</button>
-      <button class="btn btn-ghost btn-sm" onclick="clearOldSnapshots()">🗑 Clear Old Auto-Snapshots</button>
     </div>
     <div class="divx"></div>
     <div class="ct">🕐 Automatic Daily Snapshots</div>
@@ -1075,7 +1060,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 
 <script>
 // ═══════════ STATE ═══════════
-const APP_VER='2.9.25';
+const APP_VER='2.9.22';
 let S={
   sessions:[],open:{},snackOrders:[],expenses:[],inventory:[],cart:{},cartPrices:{},shifts:[],purchases:[],clientTabs:[],
   staff:[],activityLog:[], // v2.9.10: local staff PIN + activity log
@@ -1125,34 +1110,7 @@ function load(){
     }
   }catch(e){}
 }
-// FIX (v2.9.25): persist() had NO error handling at all. If localStorage
-// write fails (most commonly: quota exceeded — very plausible after
-// months of daily auto-snapshots accumulating), the exception would
-// propagate up and silently halt whatever code was supposed to run
-// AFTER persist() in the calling function — including all the screen
-// refresh calls. That produces exactly "need to refresh almost every
-// tab" and inconsistent-looking data, with no visible error at all.
-// Now every key saves independently (one failure doesn't block the
-// rest) and a real, visible warning appears instead of silent failure.
-let persistFailureWarned=false;
-function persist(){
-  const keys=['sessions','open','snackOrders','expenses','inventory','settings','shifts','purchases','clientTabs','staff','activityLog'];
-  let anyFailed=false;
-  keys.forEach(k=>{
-    try{
-      localStorage.setItem('psc_'+k,JSON.stringify(S[k]));
-    }catch(e){
-      anyFailed=true;
-      console.error('persist() failed to save "'+k+'":',e);
-    }
-  });
-  if(anyFailed&&!persistFailureWarned){
-    persistFailureWarned=true; // avoid spamming a toast on every single action
-    toast('⚠ SAVE FAILED — your device storage may be full. Check Settings → Storage, and back up immediately.',true);
-  }else if(!anyFailed){
-    persistFailureWarned=false; // recovered — allow warning again if it fails later
-  }
-}
+function persist(){['sessions','open','snackOrders','expenses','inventory','settings','shifts','purchases','clientTabs','staff','activityLog'].forEach(k=>{localStorage.setItem('psc_'+k,JSON.stringify(S[k]));});}
 
 // ═══════════ HELPERS ═══════════
 const cur=()=>S.settings.currency;
@@ -1516,7 +1474,6 @@ function buildMenuGrid(){
   const g=document.getElementById('menu-grid');if(!g) return;
   const isIndomieVariant=cat=>cat==='indomie'||cat==='indomie_double'||cat==='indomie_ready';
   const searchTerm=(document.getElementById('menu-search')?.value||'').trim().toLowerCase();
-  const hideOOS=document.getElementById('menu-hide-oos')?.checked;
   const items=S.inventory.filter(x=>{
     if(x.cat==='other') return false;
     if(menuFilter!=='all'){
@@ -1524,12 +1481,10 @@ function buildMenuGrid(){
       else if(x.cat!==menuFilter) return false;
     }
     if(searchTerm&&!x.name.toLowerCase().includes(searchTerm)) return false;
-    if(hideOOS&&effectiveStock(x)<=0) return false;
     return true;
   });
   if(!items.length){
-    const reason=searchTerm?`No items match "${searchTerm}"`:(hideOOS?'No items in stock right now':'No items. Add in Inventory tab.');
-    g.innerHTML=`<div style="color:var(--mut);font-size:10px;grid-column:1/-1;text-align:center;padding:14px">${reason}</div>`;
+    g.innerHTML=`<div style="color:var(--mut);font-size:10px;grid-column:1/-1;text-align:center;padding:14px">${searchTerm?'No items match "'+searchTerm+'"':'No items. Add in Inventory tab.'}</div>`;
     return;
   }
   // FIX: out-of-stock graying was broken — a style="..." attribute was
@@ -1827,16 +1782,13 @@ function renderInventory(){
   const el=document.getElementById('inv-wrap');if(!el) return;
   const search=(document.getElementById('inv-search')?.value||'').toLowerCase().trim();
   const sortVal=document.getElementById('inv-sort')?.value||'name-asc';
-  const hideOOS=document.getElementById('inv-hide-oos')?.checked;
   const isIndomieVariant=cat=>cat==='indomie'||cat==='indomie_double'||cat==='indomie_ready';
   // Filter
   let items=S.inventory.filter(it=>{
     if(invFilterCat==='low') return it.stock>0&&it.stock<=(it.lowAlert||5)||it.stock===0;
-    if(invFilterCat==='all'){}
-    else if(invFilterCat==='indomie'){ if(!isIndomieVariant(it.cat)) return false; }
-    else if(it.cat!==invFilterCat) return false;
-    if(hideOOS&&effectiveStock(it)<=0) return false;
-    return true;
+    if(invFilterCat==='all') return true;
+    if(invFilterCat==='indomie') return isIndomieVariant(it.cat);
+    return it.cat===invFilterCat;
   });
   // Search
   if(search) items=items.filter(it=>it.name.toLowerCase().includes(search)||(it.cat||'').toLowerCase().includes(search));
@@ -2182,23 +2134,7 @@ function exportReportExcel(){
 
 // ═══════════ CHANGELOG ═══════════
 const CHANGELOG=[
-  {version:'2.9.25',date:'2025-02-27',isNew:true,changes:[
-    {text:'LIKELY ROOT CAUSE FOUND for "needs refresh everywhere" bugs: persist() (the function that saves every change) had NO error handling. If browser storage was full/failing, saves would silently break partway through — halting whatever screen updates were supposed to happen right after, with zero visible error. This matches every symptom reported so far.',isNew:true},
-    {text:'persist() now saves each piece of data independently (one failure does not block the rest) and shows a real, visible warning if a save fails, instead of failing silently',isNew:true},
-    {text:'NEW: Settings → 📊 Storage Health — shows exactly how much browser storage is used, broken down by data type, with a warning bar before things actually start failing',isNew:true},
-    {text:'NEW: "Clear Old Auto-Snapshots" button — frees up space immediately without touching your actual café data (sessions, inventory, etc. are untouched)',isNew:true},
-    {text:'Daily auto-snapshot retention reduced from 10 days to 5 — halves this feature\'s own storage footprint, since months of accumulated daily snapshots were a likely contributor to hitting browser storage limits',isNew:true},
-    {text:'App now proactively warns at startup if storage is already critically full, instead of only showing the problem after you happen to open Settings',isNew:true},
-  ]},
-  {version:'2.9.24',date:'2025-02-26',isNew:false,changes:[
-    {text:'NEW: "Hide out of stock" toggle added to the Inventory tab too, next to Search and Sort — matches the same toggle already in the Snacks Order menu',isNew:true},
-    {text:'Correctly accounts for recipe-based items (uses "can make" quantity, not just the raw stock field) — consistent with how availability is judged everywhere else in the app',isNew:true},
-  ]},
-  {version:'2.9.23',date:'2025-02-25',isNew:false,changes:[
-    {text:'NEW: "Hide out of stock" toggle in the Snacks Order menu, next to the search box — hides unavailable items entirely instead of just graying them out, for a cleaner selection view during a rush',isNew:true},
-    {text:'Works together with search and category filters — combine all three to narrow down fast',isNew:true},
-  ]},
-  {version:'2.9.22',date:'2025-02-24',isNew:false,changes:[
+  {version:'2.9.22',date:'2025-02-24',isNew:true,changes:[
     {text:'NEW: Search box added to the Snacks Order menu — filter items by name, works together with the existing category filter buttons',isNew:true},
     {text:'BUG FIX (re-applied): out-of-stock graying in the Snacks menu was broken again after the v2.9.17 rollback (same malformed-HTML bug fixed once before in the abandoned v2.9.19) — fixed properly this time, verified in the same pass as the search feature',isNew:true},
   ]},
@@ -2457,7 +2393,7 @@ const CHANGELOG=[
 function renderChangelog(){const el=document.getElementById('changelog-body');if(!el) return;el.innerHTML=CHANGELOG.map(v=>`<div class="cl-entry"><div class="cl-ver">v${v.version}${v.isNew?` <span class="cl-new">LATEST</span>`:''}</div><div class="cl-date">${v.date}</div>${v.changes.map(c=>`<div class="cl-item">${c.text||c}${c.isNew?` <span class="cl-new">NEW</span>`:''}</div>`).join('')}</div>`).join('');}
 
 // ═══════════ SETTINGS ═══════════
-function loadSettings(){document.getElementById('cfg-name').value=S.settings.cafeName;document.getElementById('cfg-cur').value=S.settings.currency;document.getElementById('cfg-rate').value=S.settings.defaultRate;document.getElementById('cfg-n').value=S.settings.numStations;document.getElementById('cfg-alarm').checked=S.settings.alarmEnabled!==false;buildStEditor();buildPkgEditor();renderAutoSnapshots();renderStaffManagement();renderActivityLog();checkStorageHealth();}
+function loadSettings(){document.getElementById('cfg-name').value=S.settings.cafeName;document.getElementById('cfg-cur').value=S.settings.currency;document.getElementById('cfg-rate').value=S.settings.defaultRate;document.getElementById('cfg-n').value=S.settings.numStations;document.getElementById('cfg-alarm').checked=S.settings.alarmEnabled!==false;buildStEditor();buildPkgEditor();renderAutoSnapshots();renderStaffManagement();renderActivityLog();}
 function buildStEditor(){const n=parseInt(document.getElementById('cfg-n').value)||4,el=document.getElementById('st-editor');if(!el) return;
   // Suggest previously-used device types as a datalist (autocomplete),
   // but the field is free text — type anything you want.
@@ -3998,7 +3934,7 @@ function toggleShiftDetail(id){
 //     survives this device dying/being stolen/localStorage getting cleared.
 // We do NOT silently auto-download a file every day — that would clutter
 // the Downloads folder and feels like a surprise rather than a safety net.
-const MAX_SNAPSHOTS=5; // v2.9.25: reduced from 10 — halves storage footprint of this feature after it was identified as a likely contributor to hitting browser storage limits over months of daily use
+const MAX_SNAPSHOTS=10; // ~10 days of rotating history; keeps localStorage usage bounded
 
 function takeDailySnapshotIfNeeded(){
   const today=todayStr();
@@ -4061,65 +3997,6 @@ function checkBackupReminder(){
   }else{
     banner.style.display='none';
   }
-}
-
-// ═══════════ STORAGE HEALTH (v2.9.25) ═══════════
-// Direct response to real save failures — gives a visible way to see
-// how much localStorage space is used and where it's going, since
-// "why did things stop updating" was previously invisible and only
-// showed up as mysterious stale-UI bugs.
-function getStorageBreakdown(){
-  const breakdown=[];
-  let totalBytes=0;
-  for(let i=0;i<localStorage.length;i++){
-    const key=localStorage.key(i);
-    if(!key.startsWith('psc_')) continue;
-    const val=localStorage.getItem(key)||'';
-    const bytes=new Blob([val]).size;
-    totalBytes+=bytes;
-    breakdown.push({key:key.replace('psc_',''),bytes});
-  }
-  breakdown.sort((a,b)=>b.bytes-a.bytes);
-  return{breakdown,totalBytes};
-}
-function fmtBytes(b){
-  if(b<1024) return b+' B';
-  if(b<1024*1024) return (b/1024).toFixed(1)+' KB';
-  return (b/1024/1024).toFixed(2)+' MB';
-}
-function checkStorageHealth(){
-  const el=document.getElementById('storage-health-body');if(!el) return;
-  const{breakdown,totalBytes}=getStorageBreakdown();
-  // Most browsers give ~5-10MB per origin for localStorage. Using 5MB as
-  // the conservative baseline so the warning fires before things actually
-  // start failing, not after.
-  const ASSUMED_QUOTA=5*1024*1024;
-  const pct=Math.min(100,(totalBytes/ASSUMED_QUOTA*100));
-  const isHigh=pct>=70;
-  const isCritical=pct>=90;
-  let snaps=[];
-  try{ snaps=JSON.parse(localStorage.getItem('psc_autoSnapshots')||'[]'); }catch(e){}
-  el.innerHTML=`
-    <div style="background:var(--sur);border-radius:8px;padding:10px;margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px">
-        <span>Estimated usage</span>
-        <span style="font-weight:700;color:${isCritical?'var(--red)':(isHigh?'var(--orange)':'var(--green)')}">${fmtBytes(totalBytes)} (~${pct.toFixed(0)}% of typical browser limit)</span>
-      </div>
-      <div style="background:var(--bdr);border-radius:6px;height:6px;overflow:hidden">
-        <div style="background:${isCritical?'var(--red)':(isHigh?'var(--orange)':'var(--green)')};height:100%;width:${pct}%"></div>
-      </div>
-      ${isHigh?`<p style="font-size:10px;color:${isCritical?'var(--red)':'var(--orange)'};margin-top:6px">${isCritical?'⚠ CRITICAL — saves may already be failing silently. Back up now and clear old auto-snapshots below.':'⚠ Getting full — worth clearing old auto-snapshots soon.'}</p>`:''}
-    </div>
-    <div style="font-size:10px;color:var(--mut);margin-bottom:4px">By data type:</div>
-    ${breakdown.map(b=>`<div style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>${b.key}${b.key==='autoSnapshots'?' ('+snaps.length+' days)':''}</span><span>${fmtBytes(b.bytes)}</span></div>`).join('')}
-  `;
-}
-function clearOldSnapshots(){
-  if(!confirm('Clear all automatic daily snapshots? This frees up storage space. Your actual café data (sessions, inventory, etc.) is NOT affected — only the daily safety-net copies are removed.')) return;
-  localStorage.removeItem('psc_autoSnapshots');
-  toast('✓ Old auto-snapshots cleared');
-  checkStorageHealth();
-  renderAutoSnapshots();
 }
 
 // ═══════════ STAFF PIN + ACTIVITY LOG (v2.9.10) ═══════════
@@ -4285,17 +4162,6 @@ renderTabsPanel();
 takeDailySnapshotIfNeeded();
 checkBackupReminder();
 initStaffGate();
-// Proactive check — if storage is already critically full at startup,
-// warn immediately rather than waiting for the user to open Settings
-// and discover it only after something has already failed to save.
-(function(){
-  try{
-    const{totalBytes}=getStorageBreakdown();
-    if(totalBytes>4.5*1024*1024){ // >90% of the assumed 5MB baseline
-      setTimeout(()=>toast('⚠ Storage is nearly full — go to Settings → Storage Health and clear old auto-snapshots',true),1500);
-    }
-  }catch(e){/* diagnostic only, never block startup on this */}
-})();
 </script>
 </body>
 </html>

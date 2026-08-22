@@ -360,7 +360,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
   </div>
   <div class="logo">DRIFT<span class="logo-dot"> </span>ZONE</div>
   <div class="sub">Gaming Cafe Manager</div>
-  <div class="ver-badge" onclick="sw('changelog')">v2.9.25 — What's New?</div>
+  <div class="ver-badge" onclick="sw('changelog')">v2.9.11 — What's New?</div>
   <div class="ver-badge" id="current-staff-badge" onclick="switchUser()" style="cursor:pointer" title="Tap to switch user">👤 —</div>
 </header>
 
@@ -429,11 +429,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 <div class="panel" id="panel-snacks">
   <div class="card">
     <div class="ct">🍟 Snacks &amp; Drinks</div>
-    <input type="text" id="menu-search" placeholder="🔍 Search items…" oninput="buildMenuGrid()" style="width:100%;background:var(--inp);border:1px solid var(--bdr);color:var(--txt);border-radius:9px;padding:9px 12px;font-size:13px;margin-bottom:9px;font-family:inherit">
-    <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--mut);margin-bottom:9px;user-select:none">
-      <input type="checkbox" id="menu-hide-oos" onchange="buildMenuGrid()" style="width:15px;height:15px;cursor:pointer">
-      Hide out of stock
-    </label>
     <div class="filter-bar" id="snack-filter-bar">
       <button class="fbtn active-f" onclick="fmenu('all',this)">All</button>
       <button class="fbtn" onclick="fmenu('snack',this)">🍿 Snacks</button>
@@ -506,7 +501,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
     <div style="display:flex;gap:7px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px">
       <div class="fg"><label>From</label><input type="date" id="sess-from" onchange="renderSessions()"></div>
       <div class="fg"><label>To</label><input type="date" id="sess-to" onchange="renderSessions()"></div>
-      <div class="fg"><label>Device</label><select id="sess-device" onchange="renderSessions()"></select></div>
       <button class="btn btn-ghost btn-sm" onclick="setSessPeriod('all',null)">All</button>
     </div>
     <div class="slist" id="sessions-list"></div>
@@ -552,10 +546,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
           <option value="cat">Category</option>
         </select>
       </div>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--mut);user-select:none;white-space:nowrap">
-        <input type="checkbox" id="inv-hide-oos" onchange="renderInventory()" style="width:15px;height:15px;cursor:pointer">
-        Hide out of stock
-      </label>
     </div>
     <div id="inv-wrap"></div>
   </div>
@@ -782,13 +772,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
       <button class="btn btn-p" onclick="saveSettings()">Save All Settings</button>
       <button class="btn btn-teal" onclick="backupData()">⬇ Backup</button>
       <button class="btn btn-ghost" onclick="document.getElementById('restore-input').click()">⬆ Restore</button>
-    </div>
-    <div class="divx"></div>
-    <div class="ct">📊 Storage Health <span style="font-size:9px;color:var(--mut);text-transform:none;letter-spacing:0;font-weight:400">(check this if things stop updating without a refresh)</span></div>
-    <div id="storage-health-body" style="margin-bottom:10px"></div>
-    <div class="btn-row">
-      <button class="btn btn-ghost btn-sm" onclick="checkStorageHealth()">🔄 Re-check</button>
-      <button class="btn btn-ghost btn-sm" onclick="clearOldSnapshots()">🗑 Clear Old Auto-Snapshots</button>
     </div>
     <div class="divx"></div>
     <div class="ct">🕐 Automatic Daily Snapshots</div>
@@ -1024,16 +1007,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
       <div class="fg"><label>Stock</label><input type="number" id="it-stock" min="0"></div>
       <div class="fg"><label>Low Stock Alert</label><input type="number" id="it-low" min="0"></div>
     </div>
-    <!-- RETURNABLE BOTTLE SECTION -->
-    <div class="divx"></div>
-    <div style="font-size:9px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;margin-bottom:8px">
-      🍾 Returnable Bottle <span style="font-size:9px;color:var(--mut);letter-spacing:0;text-transform:none;font-weight:400">(optional — e.g. glass Cola bottles)</span>
-    </div>
-    <div class="fg">
-      <label>When sold, add an empty to</label>
-      <select id="it-empty-link"><option value="">— Not a returnable bottle —</option></select>
-    </div>
-    <p style="font-size:10px;color:var(--mut);margin-top:4px">Each sale of this item adds 1 to the linked "empty" item's stock. When you exchange empties with your supplier, log it as a Purchase — it'll ask how many empties you handed back.</p>
     <!-- RECIPE SECTION -->
     <div class="divx"></div>
     <div style="font-size:9px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;margin-bottom:8px">
@@ -1075,13 +1048,13 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 
 <script>
 // ═══════════ STATE ═══════════
-const APP_VER='2.9.25';
+const APP_VER='2.9.11';
 let S={
   sessions:[],open:{},snackOrders:[],expenses:[],inventory:[],cart:{},cartPrices:{},shifts:[],purchases:[],clientTabs:[],
   staff:[],activityLog:[], // v2.9.10: local staff PIN + activity log
   settings:{
     cafeName:'Drift Zone',currency:'$',defaultRate:10,numStations:4,
-    stationNames:['PS5 #1','PS5 #2','PS4 #1','PS4 #2'],stationRates:[10,10,10,10],stationTypes:['PS5','PS5','PS4','PS4'],
+    stationNames:['PS5 #1','PS5 #2','PS4 #1','PS4 #2'],stationRates:[10,10,10,10],
     theme:'light',alarmEnabled:true,
     // FIX: define packages without duplicating Open
     timePackages:[
@@ -1125,34 +1098,7 @@ function load(){
     }
   }catch(e){}
 }
-// FIX (v2.9.25): persist() had NO error handling at all. If localStorage
-// write fails (most commonly: quota exceeded — very plausible after
-// months of daily auto-snapshots accumulating), the exception would
-// propagate up and silently halt whatever code was supposed to run
-// AFTER persist() in the calling function — including all the screen
-// refresh calls. That produces exactly "need to refresh almost every
-// tab" and inconsistent-looking data, with no visible error at all.
-// Now every key saves independently (one failure doesn't block the
-// rest) and a real, visible warning appears instead of silent failure.
-let persistFailureWarned=false;
-function persist(){
-  const keys=['sessions','open','snackOrders','expenses','inventory','settings','shifts','purchases','clientTabs','staff','activityLog'];
-  let anyFailed=false;
-  keys.forEach(k=>{
-    try{
-      localStorage.setItem('psc_'+k,JSON.stringify(S[k]));
-    }catch(e){
-      anyFailed=true;
-      console.error('persist() failed to save "'+k+'":',e);
-    }
-  });
-  if(anyFailed&&!persistFailureWarned){
-    persistFailureWarned=true; // avoid spamming a toast on every single action
-    toast('⚠ SAVE FAILED — your device storage may be full. Check Settings → Storage, and back up immediately.',true);
-  }else if(!anyFailed){
-    persistFailureWarned=false; // recovered — allow warning again if it fails later
-  }
-}
+function persist(){['sessions','open','snackOrders','expenses','inventory','settings','shifts','purchases','clientTabs','staff','activityLog'].forEach(k=>{localStorage.setItem('psc_'+k,JSON.stringify(S[k]));});}
 
 // ═══════════ HELPERS ═══════════
 const cur=()=>S.settings.currency;
@@ -1343,27 +1289,13 @@ function selectPkg(i){
   prev.style.display='block';
   prev.innerHTML=pkg.mins>0?`⏱ ${pkg.label} — Fixed: <b>${fmt(pkg.mins/60*rate)}</b>`:'⏱ Open session — billed by elapsed time';
 }
-// v2.9.17: no sale-generating action should proceed without an open
-// shift — otherwise revenue has no shift to attribute to, and cash
-// reconciliation becomes meaningless (money appears with nobody
-// accountable for it). Call this as the first line of any function that
-// starts a session, checks out a cart, opens a tab, adds to a tab, or
-// checks out a tab.
-function requireOpenShift(){
-  if(!S.shifts.find(s=>!s.end)){
-    toast('⚠ Open a shift first (Shifts tab) before taking orders',true);
-    return false;
-  }
-  return true;
-}
 function doOpen(){
-  if(!requireOpenShift()) return;
   const player=document.getElementById('o-player').value.trim();
   const rate=parseFloat(document.getElementById('o-rate').value);
   const date=document.getElementById('o-date').value,start=document.getElementById('o-start').value;
   if(!rate||!date||!start){toast('⚠ Fill all fields',true);return;}
   const pkg=S.settings.timePackages[selectedPkg]||{label:'Open',mins:0};
-  S.open[activeIdx]={player:player||'Guest',rate,date,start,snacks:[],packageMins:pkg.mins,packageLabel:pkg.label,deviceType:S.settings.stationTypes?.[activeIdx]||'PS5'};
+  S.open[activeIdx]={player:player||'Guest',rate,date,start,snacks:[],packageMins:pkg.mins,packageLabel:pkg.label};
   clearStationAlarm(activeIdx);
   persist();cm('m-open');buildStations();
   toast('✓ '+pkg.label+' — '+(S.settings.stationNames[activeIdx]||'Station '+(activeIdx+1)));
@@ -1454,7 +1386,7 @@ function doClose(){
   const game=adjAmt>0?Math.max(0,finalTotal-snack):calcGame;
   const adjustment=adjAmt>0?(finalTotal-calcTotal):0; // positive = charged more, negative = discount
   const name=S.settings.stationNames[activeIdx]||'Station '+(activeIdx+1);
-  S.sessions.push({id:Date.now(),date:os.date,endDate:ed,start:os.start,end:et,rate:os.rate,mins,game,calcGame,snack,calcTotal,adjustment,adjustedAmount:adjAmt>0?adjAmt:null,adjustedReason:adjAmt>0?adjReason:'',total:finalTotal,station:name,player:os.player,snacks:os.snacks||[],packageLabel:os.packageMins>0?os.packageLabel:'Open',payment:selectedPayment,closedBy:currentStaff?.name||null,deviceType:os.deviceType||S.settings.stationTypes?.[activeIdx]||'PS5'});
+  S.sessions.push({id:Date.now(),date:os.date,endDate:ed,start:os.start,end:et,rate:os.rate,mins,game,calcGame,snack,calcTotal,adjustment,adjustedAmount:adjAmt>0?adjAmt:null,adjustedReason:adjAmt>0?adjReason:'',total:finalTotal,station:name,player:os.player,snacks:os.snacks||[],packageLabel:os.packageMins>0?os.packageLabel:'Open',payment:selectedPayment,closedBy:currentStaff?.name||null});
   delete S.open[activeIdx];
   clearStationAlarm(activeIdx);
   persist();cm('m-close');buildStations();renderSessions();
@@ -1515,30 +1447,17 @@ function stockLabel(it){
 function buildMenuGrid(){
   const g=document.getElementById('menu-grid');if(!g) return;
   const isIndomieVariant=cat=>cat==='indomie'||cat==='indomie_double'||cat==='indomie_ready';
-  const searchTerm=(document.getElementById('menu-search')?.value||'').trim().toLowerCase();
-  const hideOOS=document.getElementById('menu-hide-oos')?.checked;
   const items=S.inventory.filter(x=>{
     if(x.cat==='other') return false;
-    if(menuFilter!=='all'){
-      if(menuFilter==='indomie'){ if(!isIndomieVariant(x.cat)) return false; }
-      else if(x.cat!==menuFilter) return false;
-    }
-    if(searchTerm&&!x.name.toLowerCase().includes(searchTerm)) return false;
-    if(hideOOS&&effectiveStock(x)<=0) return false;
-    return true;
+    if(menuFilter==='all') return true;
+    if(menuFilter==='indomie') return isIndomieVariant(x.cat);
+    return x.cat===menuFilter;
   });
-  if(!items.length){
-    const reason=searchTerm?`No items match "${searchTerm}"`:(hideOOS?'No items in stock right now':'No items. Add in Inventory tab.');
-    g.innerHTML=`<div style="color:var(--mut);font-size:10px;grid-column:1/-1;text-align:center;padding:14px">${reason}</div>`;
-    return;
-  }
-  // FIX: out-of-stock graying was broken — a style="..." attribute was
-  // being smashed as literal text inside the class attribute instead of
-  // being its own real attribute, so the browser never applied it.
+  if(!items.length){g.innerHTML='<div style="color:var(--mut);font-size:10px;grid-column:1/-1;text-align:center;padding:14px">No items. Add in Inventory tab.</div>';return;}
   g.innerHTML=items.map(it=>{
     const eff=effectiveStock(it);
     const unavail=eff<=0;
-    return `<div class="mi ${S.cart[it.id]?'sel':''}" onclick="toggleCart('${it.id}')" style="${unavail?'opacity:.5;cursor:not-allowed':''}">
+    return `<div class="mi ${S.cart[it.id]?'sel':''} ${unavail?'style="opacity:.5;cursor:not-allowed"':''}" onclick="toggleCart('${it.id}')">
       <div class="mi-icon">${it.icon||'📦'}</div><div class="mi-name">${it.name}</div>
       <div class="mi-price">${fmt(it.price)}</div>
       <div class="mi-stock" style="color:${unavail?'var(--red)':'var(--mut)'}">${stockLabel(it)}</div>
@@ -1660,7 +1579,6 @@ function clearCart(){S.cart={};S.cartPrices={};buildMenuGrid();renderCart();}
 function buildStSel(){const sel=document.getElementById('snack-st-sel');if(!sel) return;sel.innerHTML='<option value="">— Standalone order —</option>';Object.entries(S.open).forEach(([idx,os])=>{sel.innerHTML+=`<option value="${idx}">${S.settings.stationNames[idx]||'Station '+(+idx+1)} (${os.player})</option>`;});toggleSnkPayment();}
 function toggleSnkPayment(){const stIdx=document.getElementById('snack-st-sel')?.value;const sec=document.getElementById('snk-payment-section');if(sec) sec.style.display=stIdx?'none':'block';}
 function checkout(){
-  if(!requireOpenShift()) return;
   const keys=Object.keys(S.cart);if(!keys.length){toast('⚠ Cart empty',true);return;}
   const stIdx=document.getElementById('snack-st-sel')?.value;
   // Read final values from DOM fields (captures any last-typed values)
@@ -1686,9 +1604,6 @@ function checkout(){
     if(it){
       // Only deduct item's own stock if it has no recipe
       if(!it.recipe||!it.recipe.length) it.stock-=x.qty;
-      // Returnable bottle (e.g. Cola) — the empty stays behind, gains stock
-      // on the linked "empty" item
-      if(it.linkedEmptyId) produceEmptyBottle(it.id,x.qty);
       // Always deduct recipe ingredients
       if(it.recipe&&it.recipe.length){
         const warnings=[];
@@ -1764,34 +1679,18 @@ function setSessPeriod(p,btn){
   if(p!=='custom') setPeriodInputs('sess-from','sess-to',p);
   renderSessions();
 }
-// Populates the Device filter dropdown from BOTH currently configured
-// station types AND any device type appearing in historical session
-// records — so filtering still works even if you later rename/remove a
-// station type that old sessions were recorded under.
-function renderSessDeviceFilter(){
-  const sel=document.getElementById('sess-device');if(!sel) return;
-  const prev=sel.value;
-  const types=new Set(S.settings.stationTypes||[]);
-  S.sessions.forEach(s=>{if(s.deviceType) types.add(s.deviceType);});
-  const sorted=[...types].sort();
-  sel.innerHTML='<option value="">All Devices</option>'+sorted.map(t=>`<option value="${t}">${t}</option>`).join('');
-  if(sorted.includes(prev)) sel.value=prev;
-}
 function renderSessions(){
   const from=document.getElementById('sess-from').value,to=document.getElementById('sess-to').value;
-  const device=document.getElementById('sess-device')?.value||'';
   let closed=[...S.sessions].sort((a,b)=>b.id-a.id);
   if(from&&to) closed=closed.filter(s=>s.date>=from&&s.date<=to);
-  if(device) closed=closed.filter(s=>(s.deviceType||'PS5')===device);
   const el=document.getElementById('sessions-list');if(!el) return;
   let html='';
   if(!from&&!to){
     Object.entries(S.open).forEach(([idx,os])=>{
-      if(device&&(os.deviceType||S.settings.stationTypes?.[idx]||'PS5')!==device) return;
       const m=elapsed(os.date,os.start),cost=m/60*os.rate;
       const pkgBadge=os.packageMins>0?`<span class="badge by2">${os.packageLabel}</span> `:`<span class="badge bo2">Open</span> `;
       html+=`<div class="sit live"><div class="snum live"><span class="pdot" style="margin:0"></span></div>
-        <div class="si2"><div class="sst">${S.settings.stationNames[idx]||'Station '+(+idx+1)} <span class="badge bc2">${os.deviceType||S.settings.stationTypes?.[idx]||'PS5'}</span> ${pkgBadge}<span style="color:var(--mut);font-size:9px">— ${os.player}</span></div><div class="stm">📅 ${os.date} 🕐 ${os.start} → OPEN</div></div>
+        <div class="si2"><div class="sst">${S.settings.stationNames[idx]||'Station '+(+idx+1)} ${pkgBadge}<span style="color:var(--mut);font-size:9px">— ${os.player}</span></div><div class="stm">📅 ${os.date} 🕐 ${os.start} → OPEN</div></div>
         <div><div class="sdur">${fmtDur(m)}</div><div style="font-size:8px;color:var(--mut);text-align:right">${fmt(os.rate)}/hr</div></div>
         <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">
           <div class="sprc" style="color:var(--orange)">${fmt(cost)}</div>
@@ -1805,7 +1704,7 @@ function renderSessions(){
   html+=closed.map((s,i)=>{
     const tstr=s.endDate&&s.endDate!==s.date?`${s.date} ${s.start}→${s.endDate} ${s.end}`:`${s.date} 🕐 ${s.start}→${s.end}`;
     return `<div class="sit"><div class="snum">${closed.length-i}</div>
-      <div class="si2"><div class="sst">${s.station} <span class="badge bc2">${s.deviceType||'PS5'}</span> <span class="badge by2">${s.packageLabel||'Open'}</span> <span style="color:var(--mut);font-size:9px">— ${s.player}</span>${s.snack>0?`<span class="badge bp2" style="margin-left:3px">🍟 ${fmt(s.snack)}</span>`:''}${s.adjustedAmount?`<span class="badge bt2" style="margin-left:3px">adj</span>`:''}</div>
+      <div class="si2"><div class="sst">${s.station} <span class="badge by2">${s.packageLabel||'Open'}</span> <span style="color:var(--mut);font-size:9px">— ${s.player}</span>${s.snack>0?`<span class="badge bp2" style="margin-left:3px">🍟 ${fmt(s.snack)}</span>`:''}${s.adjustedAmount?`<span class="badge bt2" style="margin-left:3px">adj</span>`:''}</div>
         <div class="stm">📅 ${tstr} ${s.payment?payIcons[s.payment]+' '+s.payment:''}</div></div>
       <div><div class="sdur">${fmtDur(s.mins)}</div><div style="font-size:8px;color:var(--mut);text-align:right">${fmt(s.rate)}/hr</div></div>
       <div><div class="sprc">${fmt(s.total)}</div>${s.adjustedAmount?`<div style="font-size:8px;color:var(--mut);text-align:right;text-decoration:line-through">${fmt(s.calcTotal)}</div>`:''}
@@ -1827,16 +1726,13 @@ function renderInventory(){
   const el=document.getElementById('inv-wrap');if(!el) return;
   const search=(document.getElementById('inv-search')?.value||'').toLowerCase().trim();
   const sortVal=document.getElementById('inv-sort')?.value||'name-asc';
-  const hideOOS=document.getElementById('inv-hide-oos')?.checked;
   const isIndomieVariant=cat=>cat==='indomie'||cat==='indomie_double'||cat==='indomie_ready';
   // Filter
   let items=S.inventory.filter(it=>{
     if(invFilterCat==='low') return it.stock>0&&it.stock<=(it.lowAlert||5)||it.stock===0;
-    if(invFilterCat==='all'){}
-    else if(invFilterCat==='indomie'){ if(!isIndomieVariant(it.cat)) return false; }
-    else if(it.cat!==invFilterCat) return false;
-    if(hideOOS&&effectiveStock(it)<=0) return false;
-    return true;
+    if(invFilterCat==='all') return true;
+    if(invFilterCat==='indomie') return isIndomieVariant(it.cat);
+    return it.cat===invFilterCat;
   });
   // Search
   if(search) items=items.filter(it=>it.name.toLowerCase().includes(search)||(it.cat||'').toLowerCase().includes(search));
@@ -1890,22 +1786,12 @@ function renderInventory(){
     </div></td></tr>`;
   }).join('')}</tbody></table></div>`;
 }
-function populateEmptyLinkDropdown(currentItemId,selectedId){
-  const sel=document.getElementById('it-empty-link');if(!sel) return;
-  // Only offer non-recipe items other than the one being edited — an
-  // "empty bottle" tracker item shouldn't itself be a recipe, and
-  // obviously can't link to itself.
-  const opts=S.inventory.filter(it=>it.id!==currentItemId&&!(it.recipe&&it.recipe.length))
-    .map(it=>`<option value="${it.id}" ${it.id===selectedId?'selected':''}>${it.icon||'📦'} ${it.name}</option>`).join('');
-  sel.innerHTML='<option value="">— Not a returnable bottle —</option>'+opts;
-}
 function openAddItem(){
   editItemId=null;
   document.getElementById('m-item-t').textContent='＋ Add Item';
   ['it-name','it-icon','it-price','it-cost','it-stock','it-low'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('it-cat').value='drink';
   document.getElementById('recipe-rows').innerHTML='';
-  populateEmptyLinkDropdown(null,'');
   syncCostFromRecipe();
   document.getElementById('m-item').style.display='flex';
 }
@@ -1920,7 +1806,6 @@ function openEditItem(id){
   document.getElementById('it-cost').value=it.cost;
   document.getElementById('it-stock').value=it.stock;
   document.getElementById('it-low').value=it.lowAlert||5;
-  populateEmptyLinkDropdown(id,it.linkedEmptyId||'');
   // Load recipe rows
   const rr=document.getElementById('recipe-rows');rr.innerHTML='';
   (it.recipe||[]).forEach(r=>addRecipeRow(r.ingredientId,r.qty));
@@ -1946,15 +1831,6 @@ function addRecipeRow(ingredientId='',qty=1){
 // This is what makes cost automatic: change the price you paid for beans on
 // the ingredient itself, and every drink that uses it recalculates next time
 // its edit form is opened or saved — no manual re-typing of cup-level cost.
-// v2.9.12: when a returnable-bottle item is sold, the empty stays behind
-// in the café — this adds it to the linked "empty" item's stock. Mirrors
-// what already happens physically: sell a Cola, gain an empty Cola bottle.
-function produceEmptyBottle(itemId,qty){
-  const it=S.inventory.find(x=>x.id===itemId);
-  if(!it||!it.linkedEmptyId) return;
-  const empty=S.inventory.find(x=>x.id===it.linkedEmptyId);
-  if(empty) empty.stock+=qty;
-}
 function calcRecipeCost(recipe){
   return (recipe||[]).reduce((sum,r)=>{
     const ing=S.inventory.find(x=>x.id===r.ingredientId);
@@ -1999,8 +1875,7 @@ function saveItem(){
   // Recipe items always get their cost freshly computed on save — never
   // trust a stale value sitting in the (read-only) field.
   const cost=recipe.length>0?calcRecipeCost(recipe):(parseFloat(document.getElementById('it-cost').value)||0);
-  const linkedEmptyId=document.getElementById('it-empty-link').value||null;
-  const itemData={name,cat:document.getElementById('it-cat').value,icon:document.getElementById('it-icon').value||'📦',price,cost,stock,lowAlert:low,recipe,linkedEmptyId};
+  const itemData={name,cat:document.getElementById('it-cat').value,icon:document.getElementById('it-icon').value||'📦',price,cost,stock,lowAlert:low,recipe};
   if(editItemId) Object.assign(S.inventory.find(x=>x.id===editItemId),itemData);
   else S.inventory.push({id:uid(),...itemData});
   persist();cm('m-item');
@@ -2124,25 +1999,6 @@ function renderReport(){
   <tr class="trow"><td colspan="5">TOTAL SNACK REVENUE</td><td>${fmt(snackRev)}</td></tr></tbody></table></div>`;
   if(expenses.length) html+=`<div class="ct" style="margin-top:16px">Expenses</div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th></tr></thead><tbody>${expenses.map(e=>`<tr><td>${e.date}</td><td>${e.desc}</td><td>${e.cat}</td><td style="color:var(--red)">${fmt(e.amount)}</td></tr>`).join('')}<tr class="trow"><td colspan="3">TOTAL EXPENSES</td><td>${fmt(totalExp)}</td></tr></tbody></table></div>`;
   if(!sessions.length&&!allOrders.length&&!expenses.length) html+='<div class="empty"><div class="ei">📊</div>No activity in this range.</div>';
-  // Item Sales Summary — how many units of each item sold, aggregated
-  // across standalone orders, session-attached snacks, and closed tabs
-  // (tabs already flow into snackOrders at checkout, so allOrders covers all three).
-  if(allOrders.length){
-    const itemSales={}; // name -> {icon,qty,revenue}
-    allOrders.forEach(o=>{
-      o.items.forEach(x=>{
-        if(!itemSales[x.name]) itemSales[x.name]={icon:x.icon||'📦',qty:0,revenue:0};
-        itemSales[x.name].qty+=x.qty;
-        itemSales[x.name].revenue+=x.total;
-      });
-    });
-    const sortedItems=Object.entries(itemSales).sort((a,b)=>b[1].qty-a[1].qty);
-    const totalUnits=sortedItems.reduce((a,[,v])=>a+v.qty,0);
-    html+=`<div class="ct" style="margin-top:18px">Item Sales Summary <span style="font-size:9px;color:var(--mut);text-transform:none;letter-spacing:0;font-weight:400">(${totalUnits} units across ${sortedItems.length} items)</span></div>
-    <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>#</th><th>Item</th><th>Units Sold</th><th>Revenue</th><th>Avg Price</th></tr></thead><tbody>
-    ${sortedItems.map(([name,v],i)=>`<tr><td><span class="badge bp2">${i+1}</span></td><td>${v.icon} ${name}</td><td style="font-weight:700">${v.qty}</td><td style="color:var(--purple)">${fmt(v.revenue)}</td><td style="color:var(--mut)">${fmt(v.revenue/v.qty)}</td></tr>`).join('')}
-    <tr class="trow"><td colspan="2">TOTAL</td><td>${totalUnits}</td><td>${fmt(sortedItems.reduce((a,[,v])=>a+v.revenue,0))}</td><td></td></tr></tbody></table></div>`;
-  }
   // Category breakdown
   if(sessions.length||allOrders.length){
     const catMap=catRevenueBreakdown(sessions,snackOrders);
@@ -2167,85 +2023,13 @@ function exportReportExcel(){
   const oh=['Date','Type','Station','Items','Payment','Total ('+C+')'];
   const or=[...snackOrders.map(o=>[o.date,'Standalone','',o.items.map(x=>x.name+' x'+x.qty).join(', '),o.payment||'',f(o.total)]),...sessions.filter(s=>s.snacks&&s.snacks.length>0).map(s=>[s.date,'Session',s.station,s.snacks.map(x=>x.name+' x'+x.qty).join(', '),s.payment||'',f(s.snack||0)])];
   const wO=XLSX.utils.aoa_to_sheet([oh,...or]);wO['!cols']=[{wch:12},{wch:12},{wch:14},{wch:36},{wch:12},{wch:12}];XLSX.utils.book_append_sheet(wb,wO,'Snack Orders');
-  // Item Sales Summary sheet — same aggregation logic as the on-screen report
-  const allOrdersX=[...snackOrders,...sessions.filter(s=>s.snacks&&s.snacks.length>0).map(s=>({items:s.snacks}))];
-  const itemSalesX={};
-  allOrdersX.forEach(o=>{o.items.forEach(x=>{if(!itemSalesX[x.name]) itemSalesX[x.name]={qty:0,revenue:0};itemSalesX[x.name].qty+=x.qty;itemSalesX[x.name].revenue+=x.total;});});
-  const sortedItemsX=Object.entries(itemSalesX).sort((a,b)=>b[1].qty-a[1].qty);
-  const ish=['#','Item','Units Sold','Revenue ('+C+')','Avg Price ('+C+')'];
-  const isr=sortedItemsX.map(([name,v],i)=>[i+1,name,v.qty,f(v.revenue),f(v.revenue/v.qty)]);
-  isr.push(['','TOTAL',sortedItemsX.reduce((a,[,v])=>a+v.qty,0),f(sortedItemsX.reduce((a,[,v])=>a+v.revenue,0)),'']);
-  const wIS=XLSX.utils.aoa_to_sheet([ish,...isr]);wIS['!cols']=[{wch:4},{wch:26},{wch:12},{wch:14},{wch:14}];XLSX.utils.book_append_sheet(wb,wIS,'Item Sales');
   const eh=['Date','Description','Category','Amount ('+C+')'];const er=expenses.map(e=>[e.date,e.desc,e.cat,f(e.amount)]);er.push(['','','TOTAL',f(totalExp)]);const wE=XLSX.utils.aoa_to_sheet([eh,...er]);wE['!cols']=[{wch:12},{wch:28},{wch:14},{wch:12}];XLSX.utils.book_append_sheet(wb,wE,'Expenses');
   XLSX.writeFile(wb,`DriftZone_Report_${from}_to_${to}.xlsx`);toast('✓ Excel exported!');
 }
 
 // ═══════════ CHANGELOG ═══════════
 const CHANGELOG=[
-  {version:'2.9.25',date:'2025-02-27',isNew:true,changes:[
-    {text:'LIKELY ROOT CAUSE FOUND for "needs refresh everywhere" bugs: persist() (the function that saves every change) had NO error handling. If browser storage was full/failing, saves would silently break partway through — halting whatever screen updates were supposed to happen right after, with zero visible error. This matches every symptom reported so far.',isNew:true},
-    {text:'persist() now saves each piece of data independently (one failure does not block the rest) and shows a real, visible warning if a save fails, instead of failing silently',isNew:true},
-    {text:'NEW: Settings → 📊 Storage Health — shows exactly how much browser storage is used, broken down by data type, with a warning bar before things actually start failing',isNew:true},
-    {text:'NEW: "Clear Old Auto-Snapshots" button — frees up space immediately without touching your actual café data (sessions, inventory, etc. are untouched)',isNew:true},
-    {text:'Daily auto-snapshot retention reduced from 10 days to 5 — halves this feature\'s own storage footprint, since months of accumulated daily snapshots were a likely contributor to hitting browser storage limits',isNew:true},
-    {text:'App now proactively warns at startup if storage is already critically full, instead of only showing the problem after you happen to open Settings',isNew:true},
-  ]},
-  {version:'2.9.24',date:'2025-02-26',isNew:false,changes:[
-    {text:'NEW: "Hide out of stock" toggle added to the Inventory tab too, next to Search and Sort — matches the same toggle already in the Snacks Order menu',isNew:true},
-    {text:'Correctly accounts for recipe-based items (uses "can make" quantity, not just the raw stock field) — consistent with how availability is judged everywhere else in the app',isNew:true},
-  ]},
-  {version:'2.9.23',date:'2025-02-25',isNew:false,changes:[
-    {text:'NEW: "Hide out of stock" toggle in the Snacks Order menu, next to the search box — hides unavailable items entirely instead of just graying them out, for a cleaner selection view during a rush',isNew:true},
-    {text:'Works together with search and category filters — combine all three to narrow down fast',isNew:true},
-  ]},
-  {version:'2.9.22',date:'2025-02-24',isNew:false,changes:[
-    {text:'NEW: Search box added to the Snacks Order menu — filter items by name, works together with the existing category filter buttons',isNew:true},
-    {text:'BUG FIX (re-applied): out-of-stock graying in the Snacks menu was broken again after the v2.9.17 rollback (same malformed-HTML bug fixed once before in the abandoned v2.9.19) — fixed properly this time, verified in the same pass as the search feature',isNew:true},
-  ]},
-  {version:'2.9.21',date:'2025-02-23',isNew:false,changes:[
-    {text:'Re-applied two empty-bottle bug fixes that were lost when v2.9.20 rebuilt on the v2.9.17 base (they were originally fixed in v2.9.19, which got abandoned along with the sync feature)',isNew:true},
-    {text:'BUG FIX: Purchase form\'s "Empties returned" field only matched Quantity at the moment an item was selected — changing Quantity afterward (e.g. to 24 for a crate) never updated it, silently recording the wrong empties count on nearly every purchase',isNew:true},
-    {text:'BUG FIX: Deleting an open tab returned items to stock but did not reverse the empty-bottle credit for returnable-bottle items, inflating empty counts',isNew:true},
-    {text:'Verified all other empty-bottle hook points (checkout, tab add/remove/adjust) are intact — this version has been checked against every known empty-bottle bug fixed so far',isNew:true},
-  ]},
-  {version:'2.9.20',date:'2025-02-22',isNew:false,changes:[
-    {text:'ROLLED BACK: Remote Dashboard sync (v2.9.18) caused real problems — tab items not updating without a manual refresh, and snack checkout incorrectly saying the cart was empty. That entire feature (and the Firebase/dashboard sync code) has been fully removed. This version is built on the confirmed-stable v2.9.17 base.',isNew:true},
-    {text:'BUG FIX: found the actual cause of "restore brings the bug back" — Restore Backup only ever refreshed 6 of the app\'s 18+ view panels (Sessions, Expenses, Inventory, Report, Orders, Stations). Everything else — Shifts, Tabs, Purchases, Evaluation, Staff, Activity Log, low-stock badge — stayed stale until a manual page refresh, which looked exactly like the sync bug even though it is a separate, older issue.',isNew:true},
-    {text:'Restore Backup and Restore Auto-Snapshot now automatically reload the page right after restoring, guaranteeing every panel shows fresh data — the same reliable path as a normal app launch, instead of a manually-maintained (and clearly incomplete) list of refresh calls',isNew:true},
-  ]},
-  {version:'2.9.17',date:'2025-02-19',isNew:false,changes:[
-    {text:'BUG FIX: Adding a returnable-bottle item (e.g. Cola) directly to a client tab did not add an empty to the linked item — only the main cart checkout and tab quantity +/- were wired up. Now covered for every path: new item on a tab, +1 to an existing tab item, and removing an item correctly reverses it too',isNew:true},
-    {text:'NEW: Orders, tabs, and sessions can no longer be started or checked out without an open shift — starting a session, checking out the cart, opening a new tab, adding to a tab, and checking out a tab all now require an active shift first, so revenue always has a shift to reconcile against',isNew:true},
-    {text:'Closing or extending an already-open session is NOT blocked even without a shift open, so nobody gets stuck unable to close out a station',isNew:true},
-  ]},
-  {version:'2.9.16',date:'2025-02-18',isNew:false,changes:[
-    {text:'NEW: Undo Close Shift — same-day closed shifts now have an "↩ Undo Close" button to reopen them, same pattern as the existing Undo Tab Checkout',isNew:true},
-    {text:'Undoing a close clears its cash reconciliation (expected/actual/variance) since you will need to re-count and re-close when actually done',isNew:true},
-    {text:'Undo is blocked if another shift is currently open (only one active shift at a time) — a hint explains why instead of just hiding the button silently',isNew:true},
-  ]},
-  {version:'2.9.15',date:'2025-02-17',isNew:false,changes:[
-    {text:'NEW: Cash Reconciliation per shift — Open Shift now asks for a Starting Cash Float; Close Shift shows Expected Cash (float + cash sales) and asks you to count and enter Actual Cash, then shows the variance (matched / short / over)',isNew:true},
-    {text:'Shift history now shows a Cash Matched / SHORT / OVER badge at a glance, with the full breakdown (float, cash sales, expected, actual, variance) in the expanded details',isNew:true},
-    {text:'Shifts closed before this update show "No cash count recorded" instead of a broken/missing number',isNew:true},
-    {text:'NEW: Item Sales Summary in Reports — shows units sold and revenue per item across standalone orders, session snacks, and closed tabs, sorted by units sold. Also added as a sheet in the Excel export',isNew:true},
-  ]},
-  {version:'2.9.14',date:'2025-02-16',isNew:false,changes:[
-    {text:'Device Type per station is now free text instead of a fixed dropdown — type whatever you want (e.g. "Pool Table", "Racing SIM", anything), with autocomplete suggestions from types you have already used',isNew:true},
-    {text:'NEW: Shift breakdown (both the live open shift and closed shift history) now expands Gaming revenue into a per-device breakdown — see PS5 vs SIM vs whatever else side by side, not just one combined Gaming total',isNew:true},
-  ]},
-  {version:'2.9.13',date:'2025-02-15',isNew:false,changes:[
-    {text:'NEW: Device Type per station — set each station\'s device (PS5, PS4, PS3, Xbox, SIM, PC, Other) in Settings → Station editor',isNew:true},
-    {text:'NEW: Sessions tab now has a Device filter — view only PS5 sessions, only SIM sessions, etc, alongside the existing date range filter',isNew:true},
-    {text:'Session list (both live and closed) now shows a device badge on every row so it is clear at a glance which type of station it was',isNew:true},
-    {text:'Existing sessions from before this update default to PS5 for the device badge/filter — edit a station\'s Device Type in Settings if that is not accurate for your setup',isNew:true},
-  ]},
-  {version:'2.9.12',date:'2025-02-14',isNew:false,changes:[
-    {text:'NEW: Returnable Bottle tracking — for items like glass Cola bottles where you exchange empties with your supplier for full ones. Link a sellable item (e.g. "Cola") to an "empty" item (e.g. "Empty Cola Bottles") in its edit form',isNew:true},
-    {text:'Every sale of a linked item now automatically adds 1 to the empty item stock — mirrors what happens physically (sell a Cola, an empty bottle stays behind)',isNew:true},
-    {text:'Logging a Purchase against a returnable-bottle item now asks how many empties you handed back to the supplier, and reduces the empty item stock accordingly (defaults to match quantity purchased, adjustable if some broke or were lost)',isNew:true},
-    {text:'Removing/undoing a linked item from a client tab correctly reverses the empty-bottle side effect too, so undone sales do not leave phantom empties behind',isNew:true},
-  ]},
-  {version:'2.9.11',date:'2025-02-13',isNew:false,changes:[
+  {version:'2.9.11',date:'2025-02-13',isNew:true,changes:[
     {text:'BUG FIX: Logging a Purchase against a recipe-based item (e.g. "Indomi Ready") silently updated a stock field that is never actually displayed — recipe items show "Can Make", calculated from their INGREDIENTS, not their own stock. The purchase looked successful but the visible number never moved',isNew:true},
     {text:'The Purchase form now only lists items WITHOUT a recipe — to restock a recipe item, purchase its raw ingredient instead (e.g. buy more Indomi, not "Indomi Ready")',isNew:true},
     {text:'Added a safety check in case old data still has a stray recipe item referenced in a purchase — it is now skipped with a warning instead of silently doing nothing',isNew:true},
@@ -2457,21 +2241,15 @@ const CHANGELOG=[
 function renderChangelog(){const el=document.getElementById('changelog-body');if(!el) return;el.innerHTML=CHANGELOG.map(v=>`<div class="cl-entry"><div class="cl-ver">v${v.version}${v.isNew?` <span class="cl-new">LATEST</span>`:''}</div><div class="cl-date">${v.date}</div>${v.changes.map(c=>`<div class="cl-item">${c.text||c}${c.isNew?` <span class="cl-new">NEW</span>`:''}</div>`).join('')}</div>`).join('');}
 
 // ═══════════ SETTINGS ═══════════
-function loadSettings(){document.getElementById('cfg-name').value=S.settings.cafeName;document.getElementById('cfg-cur').value=S.settings.currency;document.getElementById('cfg-rate').value=S.settings.defaultRate;document.getElementById('cfg-n').value=S.settings.numStations;document.getElementById('cfg-alarm').checked=S.settings.alarmEnabled!==false;buildStEditor();buildPkgEditor();renderAutoSnapshots();renderStaffManagement();renderActivityLog();checkStorageHealth();}
-function buildStEditor(){const n=parseInt(document.getElementById('cfg-n').value)||4,el=document.getElementById('st-editor');if(!el) return;
-  // Suggest previously-used device types as a datalist (autocomplete),
-  // but the field is free text — type anything you want.
-  const knownTypes=new Set(['PS5','PS4','PS3','Xbox','SIM','PC']);
-  (S.settings.stationTypes||[]).forEach(t=>{if(t) knownTypes.add(t);});
-  const datalistOpts=[...knownTypes].sort().map(t=>`<option value="${t}">`).join('');
-  el.innerHTML='<datalist id="device-type-suggestions">'+datalistOpts+'</datalist><div class="fg2">'+Array.from({length:n},(_,i)=>`<div style="background:var(--s2);border:1px solid var(--bdr);border-radius:10px;padding:11px"><div style="font-family:'Orbitron',sans-serif;font-size:8px;color:var(--accent);margin-bottom:7px;letter-spacing:2px">STATION ${i+1}</div><div class="fg" style="margin-bottom:7px"><label>Name</label><input type="text" id="sn-${i}" value="${S.settings.stationNames[i]||'Station '+(i+1)}"></div><div class="fg" style="margin-bottom:7px"><label>Rate / hr</label><input type="number" id="sr-${i}" value="${S.settings.stationRates[i]??S.settings.defaultRate}" step="0.01" min="0"></div><div class="fg"><label>Device Type</label><input type="text" id="st-${i}" list="device-type-suggestions" value="${S.settings.stationTypes?.[i]||'PS5'}" placeholder="e.g. PS5, SIM, Pool Table..."></div></div>`).join('')+'</div>';}
+function loadSettings(){document.getElementById('cfg-name').value=S.settings.cafeName;document.getElementById('cfg-cur').value=S.settings.currency;document.getElementById('cfg-rate').value=S.settings.defaultRate;document.getElementById('cfg-n').value=S.settings.numStations;document.getElementById('cfg-alarm').checked=S.settings.alarmEnabled!==false;buildStEditor();buildPkgEditor();renderAutoSnapshots();renderStaffManagement();renderActivityLog();}
+function buildStEditor(){const n=parseInt(document.getElementById('cfg-n').value)||4,el=document.getElementById('st-editor');if(!el) return;el.innerHTML='<div class="fg2">'+Array.from({length:n},(_,i)=>`<div style="background:var(--s2);border:1px solid var(--bdr);border-radius:10px;padding:11px"><div style="font-family:'Orbitron',sans-serif;font-size:8px;color:var(--accent);margin-bottom:7px;letter-spacing:2px">STATION ${i+1}</div><div class="fg" style="margin-bottom:7px"><label>Name</label><input type="text" id="sn-${i}" value="${S.settings.stationNames[i]||'Station '+(i+1)}"></div><div class="fg"><label>Rate / hr</label><input type="number" id="sr-${i}" value="${S.settings.stationRates[i]??S.settings.defaultRate}" step="0.01" min="0"></div></div>`).join('')+'</div>';}
 document.addEventListener('change',e=>{if(e.target.id==='cfg-n') buildStEditor();});
 function saveSettings(){
-  const n=parseInt(document.getElementById('cfg-n').value)||4,names=[],rates=[],types=[];
-  for(let i=0;i<n;i++){names.push(document.getElementById('sn-'+i)?.value||'Station '+(i+1));rates.push(parseFloat(document.getElementById('sr-'+i)?.value)||S.settings.defaultRate);types.push(document.getElementById('st-'+i)?.value||'PS5');}
+  const n=parseInt(document.getElementById('cfg-n').value)||4,names=[],rates=[];
+  for(let i=0;i<n;i++){names.push(document.getElementById('sn-'+i)?.value||'Station '+(i+1));rates.push(parseFloat(document.getElementById('sr-'+i)?.value)||S.settings.defaultRate);}
   savePkgsFromEditor();
-  S.settings={...S.settings,cafeName:document.getElementById('cfg-name').value||'Drift Zone',currency:document.getElementById('cfg-cur').value||'$',defaultRate:parseFloat(document.getElementById('cfg-rate').value)||10,numStations:n,stationNames:names,stationRates:rates,stationTypes:types,alarmEnabled:document.getElementById('cfg-alarm').checked};
-  persist();buildStations();renderSessDeviceFilter();toast('✓ Settings saved');
+  S.settings={...S.settings,cafeName:document.getElementById('cfg-name').value||'Drift Zone',currency:document.getElementById('cfg-cur').value||'$',defaultRate:parseFloat(document.getElementById('cfg-rate').value)||10,numStations:n,stationNames:names,stationRates:rates,alarmEnabled:document.getElementById('cfg-alarm').checked};
+  persist();buildStations();toast('✓ Settings saved');
 }
 // ═══════════ PURCHASES ═══════════
 function openNewPurchase(){
@@ -2507,7 +2285,7 @@ function addPurItem(){
   div.style.cssText='background:var(--sur);border:1px solid var(--bdr);border-radius:9px;padding:10px;margin-bottom:8px;';
   div.innerHTML=`
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-      <select class="pur-item-sel" onchange="updatePurTotal();syncPurEmptyVisibility(this)" style="flex:1">${opts}</select>
+      <select class="pur-item-sel" onchange="updatePurTotal()" style="flex:1">${opts}</select>
       <button onclick="this.parentElement.parentElement.remove();updatePurTotal();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:2px">✕</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;align-items:center">
@@ -2525,30 +2303,8 @@ function addPurItem(){
         <label style="color:var(--accent)">Line Total</label>
         <input type="number" class="pur-total" value="0" min="0" step="0.01" oninput="syncPurFromTotal(this)" style="text-align:center;border-color:var(--accent);color:var(--accent);font-weight:700">
       </div>
-    </div>
-    <div class="pur-empties-row" style="display:none;margin-top:8px;padding-top:8px;border-top:1px dashed var(--bdr)">
-      <div class="fg"><label>🍾 Empties handed back to supplier</label>
-        <input type="number" class="pur-empties" value="0" min="0" step="1" style="width:100px;text-align:center">
-      </div>
     </div>`;
   el.appendChild(div);
-  syncPurEmptyVisibility(div.querySelector('.pur-item-sel'));
-}
-// Shows/hides the "empties returned" field based on whether the selected
-// item is a returnable bottle (has linkedEmptyId), and defaults the
-// count to match the quantity being purchased (the common case — full
-// 1-for-1 swap). User can lower it if some empties broke/were lost.
-function syncPurEmptyVisibility(selectEl){
-  const row=selectEl.closest('div[id^="prow"]');if(!row) return;
-  const it=S.inventory.find(x=>x.id===selectEl.value);
-  const emptiesRow=row.querySelector('.pur-empties-row');
-  if(it&&it.linkedEmptyId){
-    emptiesRow.style.display='block';
-    const qty=parseFloat(row.querySelector('.pur-qty')?.value)||0;
-    row.querySelector('.pur-empties').value=qty;
-  }else{
-    emptiesRow.style.display='none';
-  }
 }
 function syncPurFromQtyOrCost(input){
   const row=input.closest('div[id^="prow"]')||input.parentElement.parentElement.parentElement;
@@ -2556,19 +2312,6 @@ function syncPurFromQtyOrCost(input){
   const cost=parseFloat(row.querySelector('.pur-cost')?.value)||0;
   const tot=row.querySelector('.pur-total');
   if(tot) tot.value=(qty*cost).toFixed(2);
-  // BUG FIX (v2.9.19, re-applied in v2.9.21 after the v2.9.17 rollback):
-  // "Empties returned" was only ever set once, at the moment the item was
-  // first selected (defaulting to whatever qty was at that instant —
-  // usually 1). Changing Qty afterward (e.g. to 24 for a crate) never
-  // updated it, so the empties count silently stayed wrong on every
-  // purchase where qty was adjusted after selection. Now qty changes keep
-  // it in sync; adjust it manually AFTER finalizing qty if fewer empties
-  // were actually handed back (breakage/loss).
-  const emptiesRow=row.querySelector('.pur-empties-row');
-  if(emptiesRow&&emptiesRow.style.display!=='none'){
-    const emptiesInput=row.querySelector('.pur-empties');
-    if(emptiesInput) emptiesInput.value=qty;
-  }
   updatePurTotal();
 }
 function syncPurFromTotal(input){
@@ -2609,16 +2352,7 @@ function confirmPurchase(){
     const prevStock=it.stock, prevCost=it.cost;
     it.stock+=qty;
     it.cost=unitCost;
-    // v2.9.12: returnable-bottle exchange — handing back empties reduces
-    // the linked "empty" item's stock by however many were actually
-    // returned (may be less than qty if some broke/were lost).
-    let emptiesReturned=0;
-    if(it.linkedEmptyId){
-      emptiesReturned=parseFloat(row.querySelector('.pur-empties')?.value)||0;
-      const empty=S.inventory.find(x=>x.id===it.linkedEmptyId);
-      if(empty) empty.stock=Math.max(0,empty.stock-emptiesReturned);
-    }
-    items.push({invId,name:it.name,icon:it.icon,qty,unitCost,lineTotal,prevStock,prevCost,emptiesReturned:it.linkedEmptyId?emptiesReturned:undefined});
+    items.push({invId,name:it.name,icon:it.icon,qty,unitCost,lineTotal,prevStock,prevCost});
   });
   if(!items.length){toast('⚠ No valid items',true);return;}
   const grandTotal=items.reduce((a,x)=>a+x.lineTotal,0);
@@ -2718,7 +2452,7 @@ function factoryReset(){
   // Clear all localStorage keys
   ['sessions','open','snackOrders','expenses','inventory','settings','shifts','purchases','clientTabs','staff','activityLog'].forEach(k=>localStorage.removeItem('psc_'+k));
   // Reset state to defaults
-  S={sessions:[],open:{},snackOrders:[],expenses:[],inventory:[],cart:{},cartPrices:{},shifts:[],purchases:[],clientTabs:[],staff:[],activityLog:[],settings:{cafeName:'Drift Zone',currency:'$',defaultRate:10,numStations:4,stationNames:['PS5 #1','PS5 #2','PS4 #1','PS4 #2'],stationRates:[10,10,10,10],stationTypes:['PS5','PS5','PS4','PS4'],theme:S.settings.theme||'light',alarmEnabled:true,timePackages:[{label:'Open',mins:0},{label:'15 min',mins:15},{label:'30 min',mins:30},{label:'1 hour',mins:60},{label:'2 hours',mins:120},{label:'3 hours',mins:180}]}};
+  S={sessions:[],open:{},snackOrders:[],expenses:[],inventory:[],cart:{},cartPrices:{},shifts:[],purchases:[],clientTabs:[],staff:[],activityLog:[],settings:{cafeName:'Drift Zone',currency:'$',defaultRate:10,numStations:4,stationNames:['PS5 #1','PS5 #2','PS4 #1','PS4 #2'],stationRates:[10,10,10,10],theme:S.settings.theme||'light',alarmEnabled:true,timePackages:[{label:'Open',mins:0},{label:'15 min',mins:15},{label:'30 min',mins:30},{label:'1 hour',mins:60},{label:'2 hours',mins:120},{label:'3 hours',mins:180}]}};
   persist();
   buildStations();renderSessions();renderInventory();renderExpenses();renderPurchases();renderReport();loadSettings();
   sw('stations');
@@ -2768,35 +2502,12 @@ function nukeAll(){
   persist();buildStations();renderSessions();renderOrders();renderPurchases();renderTabsPanel();renderReport();toast('Cleared');
 }
 function backupData(){const blob=new Blob([JSON.stringify({version:APP_VER,exportedAt:new Date().toISOString(),...S},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='DriftZone_Backup_'+todayStr()+'.json';a.click();URL.revokeObjectURL(a.href);S.settings.lastManualBackupAt=Date.now();persist();hideBackupReminder();toast('✓ Backup downloaded');}
-// FIX (v2.9.20): restore only ever refreshed 6 of the 18+ view functions
-// in the app (Sessions, Expenses, Inventory, Report, Orders, Stations) —
-// everything else (Shifts, Tabs, Purchases, Evaluation, Staff, Activity
-// Log, low-stock badge, etc.) stayed stale until a manual page refresh.
-// That's exactly the "have to close and refresh" symptom. Rather than
-// manually maintain a list of render calls (which is exactly how this
-// bug happened — a function got missed, and will keep happening as more
-// panels get added), this now reloads the page after restoring, which
-// guarantees every panel renders fresh from the newly-restored data —
-// the same code path as a normal app launch, which is already known to
-// work correctly.
-function restoreData(e){
-  const file=e.target.files[0];if(!file) return;
-  if(!confirm('Replace all data? The app will reload automatically once restored.')){e.target.value='';return;}
-  const r=new FileReader();
-  r.onload=ev=>{
-    try{
-      const d=JSON.parse(ev.target.result);
-      ['sessions','open','snackOrders','expenses','inventory','settings','shifts','purchases','clientTabs','staff','activityLog'].forEach(k=>{if(d[k]) S[k]=d[k];});
-      persist();
-      toast('✓ Restored — reloading…');
-      setTimeout(()=>location.reload(),700);
-    }catch(err){
-      toast('⚠ Invalid file',true);
-      e.target.value='';
-    }
-  };
-  r.readAsText(file);
-}
+// FIX (v2.9.5): restore was silently dropping shifts, purchases, and
+// clientTabs even though backupData() saves them — a restore after real
+// data loss would have quietly lost shift history, purchase records, and
+// open/closed client tabs with no error shown. Now restores everything
+// backupData() actually writes.
+function restoreData(e){const file=e.target.files[0];if(!file) return;if(!confirm('Replace all data?')){e.target.value='';return;}const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);['sessions','open','snackOrders','expenses','inventory','settings','shifts','purchases','clientTabs','staff','activityLog'].forEach(k=>{if(d[k]) S[k]=d[k];});persist();buildStations();renderSessions();renderExpenses();renderInventory();renderReport();renderOrders();if(S.settings.theme) setTheme(S.settings.theme);toast('✓ Restored!');}catch(err){toast('⚠ Invalid file',true);}e.target.value='';};r.readAsText(file);}
 
 // ═══════════ TABS ═══════════
 const TABS=['stations','tabs','snacks','orders','sessions','inventory','purchases','expenses','profit','report','heatmap','shifts','evaluation','changelog','settings'];
@@ -2834,7 +2545,6 @@ function openNewTabModal(){
   setTimeout(()=>document.getElementById('newtab-name').focus(),80);
 }
 function confirmNewTab(){
-  if(!requireOpenShift()) return;
   const name=document.getElementById('newtab-name').value.trim();
   const date=document.getElementById('newtab-date').value;
   const time=document.getElementById('newtab-time').value;
@@ -3041,7 +2751,6 @@ function adjTabItem(tabId,idx,delta){
     }else{
       if(inv.stock<1){toast('⚠ Out of stock',true);return;}
       inv.stock-=delta;
-      if(inv.linkedEmptyId) produceEmptyBottle(inv.id,delta);
     }
   }else if(inv&&delta<0){
     // Returning: give back to ingredients or own stock
@@ -3049,11 +2758,6 @@ function adjTabItem(tabId,idx,delta){
       inv.recipe.forEach(r=>{const ing=S.inventory.find(i=>i.id===r.ingredientId);if(ing) ing.stock+=r.qty;});
     }else{
       inv.stock+=Math.abs(delta);
-      // Undo the empty-bottle side effect too — this sale never happened
-      if(inv.linkedEmptyId){
-        const empty=S.inventory.find(x=>x.id===inv.linkedEmptyId);
-        if(empty) empty.stock=Math.max(0,empty.stock-Math.abs(delta));
-      }
     }
   }
   item.qty=newQty;
@@ -3070,11 +2774,6 @@ function removeTabItem(tabId,idx){
       inv.recipe.forEach(r=>{const ing=S.inventory.find(i=>i.id===r.ingredientId);if(ing) ing.stock+=r.qty*item.qty;});
     }else{
       inv.stock+=item.qty;
-    }
-    // This item's sale never happened — undo the empty-bottle side effect too
-    if(inv.linkedEmptyId){
-      const empty=S.inventory.find(x=>x.id===inv.linkedEmptyId);
-      if(empty) empty.stock=Math.max(0,empty.stock-item.qty);
     }
   }
   t.items.splice(idx,1);
@@ -3108,7 +2807,6 @@ function tabMenuFilter(cat,btn){
   buildTabMenu();
 }
 function addItemToTab(invId){
-  if(!requireOpenShift()) return;
   const t=S.clientTabs.find(x=>x.id===activeTabId);if(!t) return;
   const inv=S.inventory.find(x=>x.id===invId);if(!inv) return;
   // Use effectiveStock — checks ingredients for recipe items
@@ -3122,7 +2820,6 @@ function addItemToTab(invId){
     if(!inv.recipe?.length) inv.stock--;
     // Always deduct recipe ingredients
     if(inv.recipe?.length) inv.recipe.forEach(r=>{const ing=S.inventory.find(i=>i.id===r.ingredientId);if(ing){if(ing.stock<r.qty) toast('⚠ Low: '+ing.name,true);ing.stock=Math.max(0,ing.stock-r.qty);}});
-    if(inv.linkedEmptyId) produceEmptyBottle(inv.id,1);
     persist();renderTabItems(t);buildTabMenu();refreshOpenTabCard(t.id);toast('✓ +1 '+inv.name);return;
   }
   // New item — deduct stock
@@ -3130,7 +2827,6 @@ function addItemToTab(invId){
   if(inv.recipe?.length){
     inv.recipe.forEach(r=>{const ing=S.inventory.find(i=>i.id===r.ingredientId);if(ing){if(ing.stock<r.qty) toast('⚠ Low: '+ing.name,true);ing.stock=Math.max(0,ing.stock-r.qty);}});
   }
-  if(inv.linkedEmptyId) produceEmptyBottle(inv.id,1);
   t.items.push({invId,icon:inv.icon,name:inv.name,cat:inv.cat,qty:1,unitPrice:inv.price,lineTotal:inv.price});
   persist();renderTabItems(t);buildTabMenu();updateLowStockBadge();refreshOpenTabCard(t.id);
   toast('✓ '+inv.name+' added to tab');
@@ -3150,7 +2846,6 @@ function selTabPay(m){
   }
 }
 function checkoutTab(){
-  if(!requireOpenShift()) return;
   const t=S.clientTabs.find(x=>x.id===activeTabId);if(!t) return;
   if(!t.items.length){toast('⚠ Tab is empty',true);return;}
   const calcTotal=tabTotal(t);
@@ -3190,11 +2885,6 @@ function deleteOpenTab(){
       inv.recipe.forEach(r=>{const ing=S.inventory.find(i=>i.id===r.ingredientId);if(ing) ing.stock+=r.qty*item.qty;});
     }else{
       inv.stock+=item.qty;
-    }
-    // This item's sale never happened — undo the empty-bottle side effect too
-    if(inv.linkedEmptyId){
-      const empty=S.inventory.find(x=>x.id===inv.linkedEmptyId);
-      if(empty) empty.stock=Math.max(0,empty.stock-item.qty);
     }
   });
   S.clientTabs=S.clientTabs.filter(x=>x.id!==activeTabId);
@@ -3767,17 +3457,7 @@ function shiftRevenue(sh){
     payBreakdown[m].count++;
   });
 
-  // Gaming revenue grouped by device type — e.g. PS5 vs SIM — using
-  // whatever free-text device type was set on the station at session time.
-  const deviceBreakdown={};
-  sessInShift.forEach(s=>{
-    const d=s.deviceType||'PS5';
-    if(!deviceBreakdown[d]) deviceBreakdown[d]={total:0,count:0};
-    deviceBreakdown[d].total+=s.game;
-    deviceBreakdown[d].count++;
-  });
-
-  return{sessInShift,ordersInShift,gameRev,snackRev,totalRev,payBreakdown,deviceBreakdown,gameRevenue,snackRevenue,totalRevenue,discountTotal,markupTotal,totalCash};
+  return{sessInShift,ordersInShift,gameRev,snackRev,totalRev,payBreakdown,gameRevenue,snackRevenue,totalRevenue,discountTotal,markupTotal,totalCash};
 }
 
 function payBreakdownHTML(pb){
@@ -3791,21 +3471,6 @@ function payBreakdownHTML(pb){
     </div>`;
   }).join('');
 }
-// Gaming revenue broken down by device type (PS5, SIM, whatever free text
-// was set per station) — same visual pattern as the payment breakdown.
-function deviceBreakdownHTML(db){
-  const types=Object.keys(db).sort();
-  if(!types.length) return '<div style="padding:8px;font-size:11px;color:var(--mut)">No gaming sessions yet</div>';
-  return types.map(t=>{
-    const d=db[t];
-    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bdr)">
-      <span style="font-size:16px">🎮</span>
-      <span style="font-weight:700;flex:1">${t}</span>
-      <span class="badge bc2" style="font-size:10px">${d.count} sess</span>
-      <span style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:900;color:var(--accent)">${fmt(d.total)}</span>
-    </div>`;
-  }).join('');
-}
 
 function renderShifts(){
   const openShift=S.shifts.find(s=>!s.end);
@@ -3814,7 +3479,7 @@ function renderShifts(){
 
   if(openShift){
     const m=Math.round((Date.now()-openShift.startTs)/60000);
-    const{sessInShift,ordersInShift,gameRevenue,snackRevenue,discountTotal,markupTotal,totalCash,payBreakdown,deviceBreakdown}=shiftRevenue(openShift);
+    const{sessInShift,ordersInShift,gameRevenue,snackRevenue,discountTotal,markupTotal,totalCash,payBreakdown}=shiftRevenue(openShift);
     statusEl.innerHTML=`<span class="badge bg2" style="font-size:10px;padding:4px 12px"><span class="pdot"></span> SHIFT OPEN</span>`;
     currentEl.innerHTML=`<div class="shift-open-card">
       <div style="font-family:'Orbitron',sans-serif;font-size:12px;color:var(--green);margin-bottom:12px">● CURRENT SHIFT — ${openShift.staff||'Staff'}</div>
@@ -3831,29 +3496,12 @@ function renderShifts(){
       <div style="background:var(--sur);border-radius:10px;padding:4px 12px;margin-bottom:12px">
         ${payBreakdownHTML(payBreakdown)}
       </div>
-      <div style="font-size:9px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;margin-bottom:8px">🎮 Gaming by Device</div>
-      <div style="background:var(--sur);border-radius:10px;padding:4px 12px;margin-bottom:12px">
-        ${deviceBreakdownHTML(deviceBreakdown)}
-      </div>
       <div style="font-size:9px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;margin-bottom:4px">📊 Category Breakdown</div>
       <div style="background:var(--sur);border-radius:10px;padding:4px 12px;margin-bottom:14px">
         ${catBreakdownHTML(catRevenueBreakdown(sessInShift,ordersInShift))||'<div style="padding:8px;font-size:11px;color:var(--mut)">No sales yet</div>'}
       </div>
       <div class="btn-row" style="margin-top:0">
-        <button class="btn btn-r" onclick="showCloseShiftRecon()">■ Close Shift</button>
-      </div>
-      <div id="close-shift-recon" style="display:none;margin-top:12px;padding-top:12px;border-top:1px dashed var(--bdr)">
-        <div style="font-size:9px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;margin-bottom:8px">💰 Cash Reconciliation</div>
-        <div style="background:var(--sur);border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px">
-          <div style="display:flex;justify-content:space-between;padding:3px 0"><span>Starting Cash Float</span><span>${fmt(openShift.startingCash||0)}</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0"><span>+ Cash Sales This Shift</span><span>${fmt(payBreakdown['Cash']?.total||0)}</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;border-top:1px solid var(--bdr);margin-top:3px;font-weight:700"><span>= Expected Cash in Drawer</span><span id="expected-cash-display">${fmt((openShift.startingCash||0)+(payBreakdown['Cash']?.total||0))}</span></div>
-        </div>
-        <div class="fg" style="margin-bottom:10px"><label>Actual Cash Counted</label><input type="number" id="actual-cash-counted" min="0" step="0.01" placeholder="Count the drawer and enter it here"></div>
-        <div class="btn-row">
-          <button class="btn btn-r" onclick="closeShift()">✓ Confirm & Close Shift</button>
-          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('close-shift-recon').style.display='none'">Cancel</button>
-        </div>
+        <button class="btn btn-r" onclick="closeShift()">■ Close Shift</button>
       </div>
     </div>`;
   } else {
@@ -3864,7 +3512,6 @@ function renderShifts(){
         <div class="fg"><label>Staff Name</label><input type="text" id="shift-staff" placeholder="Your name"></div>
         <div class="fg"><label>Date</label><input type="date" id="shift-date"></div>
         <div class="fg"><label>Start Time</label><input type="time" id="shift-start"></div>
-        <div class="fg"><label>Starting Cash Float</label><input type="number" id="shift-startcash" min="0" step="0.01" value="0" placeholder="Cash in drawer at start"></div>
       </div>
       <div class="btn-row"><button class="btn btn-g" onclick="openShift()">▶ Open Shift</button></div>
     </div>`;
@@ -3877,13 +3524,12 @@ function renderShifts(){
   const histEl=document.getElementById('shift-history');
   if(!closed.length){histEl.innerHTML='<div class="empty"><div class="ei">👥</div>No closed shifts yet.</div>';return;}
   histEl.innerHTML=closed.map((s,i)=>{
-    const{sessInShift,ordersInShift,gameRevenue,snackRevenue,discountTotal,markupTotal,totalCash,payBreakdown,deviceBreakdown}=shiftRevenue(s);
+    const{sessInShift,ordersInShift,gameRevenue,snackRevenue,discountTotal,markupTotal,totalCash,payBreakdown}=shiftRevenue(s);
     const mins=s.endTs?Math.round((s.endTs-s.startTs)/60000):0;
     const payRow=PAY_METHODS.filter(m=>payBreakdown[m]?.count>0).map(m=>`${PAY_ICONS[m]} ${m}: ${fmt(payBreakdown[m].total)} (${payBreakdown[m].count})`).join(' &nbsp;|&nbsp; ');
     const catMap=catRevenueBreakdown(sessInShift,ordersInShift);
     const catHtml=catBreakdownHTML(catMap);
     const shiftCardId='shcard-'+s.id;
-    const canUndoClose=s.date===todayStr()&&!S.shifts.find(x=>!x.end); // same-day only, and no other shift currently open
     return `<div style="background:var(--s2);border:1px solid var(--bdr);border-radius:12px;padding:13px;margin-bottom:8px;animation:slideIn .25s ease">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         <div class="shift-num">${closed.length-i}</div>
@@ -3893,7 +3539,6 @@ function renderShifts(){
         </div>
         <div class="shift-rev">${fmt(totalCash)}</div>
         <button class="btn btn-ghost btn-xs" onclick="toggleShiftDetail('${shiftCardId}')">▸ Details</button>
-        ${canUndoClose?`<button class="btn btn-ghost btn-xs" onclick="undoCloseShift('${s.id}')" style="color:var(--orange);border-color:var(--orange)">↩ Undo Close</button>`:(s.date===todayStr()?`<span title="Close or undo the currently open shift first" style="font-size:9px;color:var(--mut)">↩ blocked (shift open)</span>`:'')}
         <button class="btn btn-r btn-xs" onclick="deleteShift('${s.id}')">✕</button>
       </div>
       <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:11px;margin-bottom:6px">
@@ -3902,25 +3547,11 @@ function renderShifts(){
         ${discountTotal>0?`<span style="color:var(--red)">💸 Discounts: -${fmt(discountTotal)}</span>`:''}
         ${markupTotal>0?`<span style="color:var(--yellow)">📈 Markups: +${fmt(markupTotal)}</span>`:''}
         <span style="color:var(--green);font-weight:700">💵 Cash: ${fmt(totalCash)}</span>
-        ${s.cashVariance!==undefined?(Math.abs(s.cashVariance)<0.01
-          ?'<span class="badge bg2">✓ Cash Matched</span>'
-          :`<span class="badge ${s.cashVariance<0?'br2':'bo2'}">${s.cashVariance<0?'⚠ SHORT':'⚠ OVER'} ${fmt(Math.abs(s.cashVariance))}</span>`):''}
       </div>
       <div style="font-size:10px;color:var(--mut);margin-bottom:0">${payRow||'No payment data'}</div>
       <div id="${shiftCardId}" style="display:none;margin-top:10px;border-top:1px solid var(--bdr);padding-top:10px">
-        ${s.actualCashCounted!==undefined?`
-        <div style="font-size:9px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;margin-bottom:4px">💰 Cash Reconciliation</div>
-        <div style="background:var(--sur);border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px">
-          <div style="display:flex;justify-content:space-between;padding:3px 0"><span>Starting Cash Float</span><span>${fmt(s.startingCash||0)}</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0"><span>+ Cash Sales</span><span>${fmt(payBreakdown['Cash']?.total||0)}</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;border-top:1px solid var(--bdr);margin-top:3px"><span>= Expected</span><span>${fmt(s.expectedCash)}</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0"><span>Actual Counted</span><span>${fmt(s.actualCashCounted)}</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;border-top:1px solid var(--bdr);margin-top:3px;font-weight:700;color:${Math.abs(s.cashVariance)<0.01?'var(--green)':(s.cashVariance<0?'var(--red)':'var(--orange)')}"><span>Variance</span><span>${s.cashVariance<0?'-':'+'}${fmt(Math.abs(s.cashVariance))}</span></div>
-        </div>`:'<p style="font-size:10px;color:var(--mut);margin-bottom:10px">No cash count recorded for this shift (closed before this feature, or count was skipped).</p>'}
         <div style="font-size:9px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;margin-bottom:4px">💳 Payment</div>
         <div style="background:var(--sur);border-radius:8px;padding:2px 10px;margin-bottom:10px">${payBreakdownHTML(payBreakdown)}</div>
-        <div style="font-size:9px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;margin-bottom:4px">🎮 Gaming by Device</div>
-        <div style="background:var(--sur);border-radius:8px;padding:2px 10px;margin-bottom:10px">${deviceBreakdownHTML(deviceBreakdown)}</div>
         <div style="font-size:9px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;margin-bottom:4px">📊 By Category</div>
         <div style="background:var(--sur);border-radius:8px;padding:4px 10px">${catHtml||'<div style="padding:8px;font-size:11px;color:var(--mut)">No sales</div>'}</div>
       </div>
@@ -3932,50 +3563,14 @@ function openShift(){
   const staff=document.getElementById('shift-staff')?.value.trim();
   const date=document.getElementById('shift-date')?.value;
   const startTime=document.getElementById('shift-start')?.value;
-  const startingCash=parseFloat(document.getElementById('shift-startcash')?.value)||0;
   if(!date||!startTime){toast('⚠ Fill all fields',true);return;}
-  S.shifts.push({id:uid(),staff:staff||'Staff',date,startTime,startTs:Date.now(),end:null,endTime:null,endTs:null,startingCash});
+  S.shifts.push({id:uid(),staff:staff||'Staff',date,startTime,startTs:Date.now(),end:null,endTime:null,endTs:null});
   persist();renderShifts();toast('✓ Shift opened');
-  logActivity('open_shift',`Opened shift — starting cash ${fmt(startingCash)}`);
-}
-function showCloseShiftRecon(){
-  const el=document.getElementById('close-shift-recon');if(!el) return;
-  el.style.display=el.style.display==='none'?'block':'none';
 }
 function closeShift(){
   const sh=S.shifts.find(s=>!s.end);if(!sh) return;
-  const actualInput=document.getElementById('actual-cash-counted');
-  const actualCash=actualInput?parseFloat(actualInput.value):null;
-  if(actualInput&&(actualCash===null||isNaN(actualCash))){
-    toast('⚠ Enter the actual cash counted before closing',true);
-    return;
-  }
-  const{payBreakdown}=shiftRevenue(sh);
-  const expectedCash=(sh.startingCash||0)+(payBreakdown['Cash']?.total||0);
   sh.end=true;sh.endTime=nowTime();sh.endTs=Date.now();
-  if(actualCash!==null){
-    sh.expectedCash=expectedCash;
-    sh.actualCashCounted=actualCash;
-    sh.cashVariance=actualCash-expectedCash;
-  }
-  persist();renderShifts();
-  if(actualCash!==null&&Math.abs(sh.cashVariance)>0.009){
-    toast(sh.cashVariance<0?`⚠ Shift closed — drawer is SHORT ${fmt(Math.abs(sh.cashVariance))}`:`⚠ Shift closed — drawer is OVER ${fmt(sh.cashVariance)}`,true);
-  }else{
-    toast('✓ Shift closed — cash matches exactly');
-  }
-  logActivity('close_shift',`Closed shift${actualCash!==null?` — variance ${fmt(sh.cashVariance)}`:''}`);
-}
-function undoCloseShift(id){
-  const sh=S.shifts.find(s=>s.id===id);if(!sh) return;
-  if(S.shifts.find(x=>!x.end)){toast('⚠ Close or undo the currently open shift first',true);return;}
-  if(sh.date!==todayStr()){toast('⚠ Can only undo same-day shift closes',true);return;}
-  if(!confirm(`Undo the close for ${sh.staff||'this shift'}'s shift? It will reopen — any cash reconciliation recorded will be cleared, since you will need to re-count and re-close when done.`)) return;
-  sh.end=null;sh.endTime=null;sh.endTs=null;
-  delete sh.expectedCash;delete sh.actualCashCounted;delete sh.cashVariance;
-  persist();renderShifts();
-  toast(`↩ Shift reopened — ${sh.staff||'shift'} is active again`);
-  logActivity('undo_close_shift',`Reopened shift for ${sh.staff||'—'}`);
+  persist();renderShifts();toast('✓ Shift closed');
 }
 function deleteShift(id){
   if(!confirm('Delete this shift?')) return;
@@ -3998,7 +3593,7 @@ function toggleShiftDetail(id){
 //     survives this device dying/being stolen/localStorage getting cleared.
 // We do NOT silently auto-download a file every day — that would clutter
 // the Downloads folder and feels like a surprise rather than a safety net.
-const MAX_SNAPSHOTS=5; // v2.9.25: reduced from 10 — halves storage footprint of this feature after it was identified as a likely contributor to hitting browser storage limits over months of daily use
+const MAX_SNAPSHOTS=10; // ~10 days of rotating history; keeps localStorage usage bounded
 
 function takeDailySnapshotIfNeeded(){
   const today=todayStr();
@@ -4033,14 +3628,14 @@ function renderAutoSnapshots(){
   }).join('');
 }
 function restoreAutoSnapshot(idx){
-  if(!confirm('Replace current data with this automatic snapshot? This cannot be undone (consider downloading a manual backup of your CURRENT data first). The app will reload automatically once restored.')) return;
+  if(!confirm('Replace current data with this automatic snapshot? This cannot be undone (consider downloading a manual backup of your CURRENT data first).')) return;
   try{
     const snaps=JSON.parse(localStorage.getItem('psc_autoSnapshots')||'[]');
     const snap=snaps[idx];if(!snap) return;
     Object.assign(S,snap.data);
-    persist();
-    toast('✓ Restored from '+snap.date+' — reloading…');
-    setTimeout(()=>location.reload(),700);
+    persist();buildStations();renderSessions();renderExpenses();renderInventory();renderReport();renderOrders();renderShifts();renderPurchases();renderTabsPanel();
+    if(S.settings.theme) setTheme(S.settings.theme);
+    toast('✓ Restored from '+snap.date+' auto-snapshot');
   }catch(e){ toast('⚠ Could not restore snapshot',true); }
 }
 
@@ -4061,65 +3656,6 @@ function checkBackupReminder(){
   }else{
     banner.style.display='none';
   }
-}
-
-// ═══════════ STORAGE HEALTH (v2.9.25) ═══════════
-// Direct response to real save failures — gives a visible way to see
-// how much localStorage space is used and where it's going, since
-// "why did things stop updating" was previously invisible and only
-// showed up as mysterious stale-UI bugs.
-function getStorageBreakdown(){
-  const breakdown=[];
-  let totalBytes=0;
-  for(let i=0;i<localStorage.length;i++){
-    const key=localStorage.key(i);
-    if(!key.startsWith('psc_')) continue;
-    const val=localStorage.getItem(key)||'';
-    const bytes=new Blob([val]).size;
-    totalBytes+=bytes;
-    breakdown.push({key:key.replace('psc_',''),bytes});
-  }
-  breakdown.sort((a,b)=>b.bytes-a.bytes);
-  return{breakdown,totalBytes};
-}
-function fmtBytes(b){
-  if(b<1024) return b+' B';
-  if(b<1024*1024) return (b/1024).toFixed(1)+' KB';
-  return (b/1024/1024).toFixed(2)+' MB';
-}
-function checkStorageHealth(){
-  const el=document.getElementById('storage-health-body');if(!el) return;
-  const{breakdown,totalBytes}=getStorageBreakdown();
-  // Most browsers give ~5-10MB per origin for localStorage. Using 5MB as
-  // the conservative baseline so the warning fires before things actually
-  // start failing, not after.
-  const ASSUMED_QUOTA=5*1024*1024;
-  const pct=Math.min(100,(totalBytes/ASSUMED_QUOTA*100));
-  const isHigh=pct>=70;
-  const isCritical=pct>=90;
-  let snaps=[];
-  try{ snaps=JSON.parse(localStorage.getItem('psc_autoSnapshots')||'[]'); }catch(e){}
-  el.innerHTML=`
-    <div style="background:var(--sur);border-radius:8px;padding:10px;margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px">
-        <span>Estimated usage</span>
-        <span style="font-weight:700;color:${isCritical?'var(--red)':(isHigh?'var(--orange)':'var(--green)')}">${fmtBytes(totalBytes)} (~${pct.toFixed(0)}% of typical browser limit)</span>
-      </div>
-      <div style="background:var(--bdr);border-radius:6px;height:6px;overflow:hidden">
-        <div style="background:${isCritical?'var(--red)':(isHigh?'var(--orange)':'var(--green)')};height:100%;width:${pct}%"></div>
-      </div>
-      ${isHigh?`<p style="font-size:10px;color:${isCritical?'var(--red)':'var(--orange)'};margin-top:6px">${isCritical?'⚠ CRITICAL — saves may already be failing silently. Back up now and clear old auto-snapshots below.':'⚠ Getting full — worth clearing old auto-snapshots soon.'}</p>`:''}
-    </div>
-    <div style="font-size:10px;color:var(--mut);margin-bottom:4px">By data type:</div>
-    ${breakdown.map(b=>`<div style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>${b.key}${b.key==='autoSnapshots'?' ('+snaps.length+' days)':''}</span><span>${fmtBytes(b.bytes)}</span></div>`).join('')}
-  `;
-}
-function clearOldSnapshots(){
-  if(!confirm('Clear all automatic daily snapshots? This frees up storage space. Your actual café data (sessions, inventory, etc.) is NOT affected — only the daily safety-net copies are removed.')) return;
-  localStorage.removeItem('psc_autoSnapshots');
-  toast('✓ Old auto-snapshots cleared');
-  checkStorageHealth();
-  renderAutoSnapshots();
 }
 
 // ═══════════ STAFF PIN + ACTIVITY LOG (v2.9.10) ═══════════
@@ -4277,7 +3813,6 @@ document.getElementById('rpt-from').value=td;
 document.getElementById('rpt-to').value=td;
 buildStations();
 renderReport();
-renderSessDeviceFilter();
 startClock();
 updateLowStockBadge();
 setInterval(updateLowStockBadge, 30000);
@@ -4285,17 +3820,6 @@ renderTabsPanel();
 takeDailySnapshotIfNeeded();
 checkBackupReminder();
 initStaffGate();
-// Proactive check — if storage is already critically full at startup,
-// warn immediately rather than waiting for the user to open Settings
-// and discover it only after something has already failed to save.
-(function(){
-  try{
-    const{totalBytes}=getStorageBreakdown();
-    if(totalBytes>4.5*1024*1024){ // >90% of the assumed 5MB baseline
-      setTimeout(()=>toast('⚠ Storage is nearly full — go to Settings → Storage Health and clear old auto-snapshots',true),1500);
-    }
-  }catch(e){/* diagnostic only, never block startup on this */}
-})();
 </script>
 </body>
 </html>
