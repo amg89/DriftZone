@@ -361,7 +361,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
   </div>
   <div class="logo">DRIFT<span class="logo-dot"> </span>ZONE</div>
   <div class="sub">Gaming Cafe Manager</div>
-  <div class="ver-badge" onclick="sw('changelog')">v2.9.29 — What's New?</div>
+  <div class="ver-badge" onclick="sw('changelog')">v2.9.28 — What's New?</div>
   <div class="ver-badge" id="current-staff-badge" onclick="switchUser()" style="cursor:pointer" title="Tap to switch user">👤 —</div>
 </header>
 
@@ -1090,7 +1090,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 
 <script>
 // ═══════════ STATE ═══════════
-const APP_VER='2.9.29';
+const APP_VER='2.9.28';
 let S={
   sessions:[],open:{},snackOrders:[],expenses:[],inventory:[],cart:{},cartPrices:{},shifts:[],purchases:[],clientTabs:[],
   staff:[],activityLog:[], // v2.9.10: local staff PIN + activity log
@@ -1838,40 +1838,7 @@ function renderOrders(){
     </div>`;
   }).join('');
 }
-// BUG FIX (v2.9.29): delOrder() only ever removed the order record —
-// it never restored the stock that checkout() deducted when the order
-// was placed. Every deleted standalone order silently lost that stock
-// forever, regardless of payment method (not specific to VodafoneCash —
-// that just happened to be the order that surfaced it).
-// Tab-sourced orders (o.isTab) are deliberately NOT touched here — their
-// stock was already deducted when items were added to the tab, not at
-// checkout time, and undoTabCheckout() is the correct tool for reversing
-// those; restoring stock here too would double it up incorrectly.
-function delOrder(id){
-  const o=S.snackOrders.find(x=>x.id===id);
-  if(!o) return;
-  if(!confirm('Delete order?'+(o.isTab?'':' This will restore the stock for its items.'))) return;
-  if(!o.isTab){
-    o.items.forEach(x=>{
-      const inv=S.inventory.find(i=>i.id===x.id);
-      if(!inv) return;
-      if(inv.recipe&&inv.recipe.length){
-        inv.recipe.forEach(r=>{const ing=S.inventory.find(i=>i.id===r.ingredientId);if(ing) ing.stock+=r.qty*x.qty;});
-      }else{
-        inv.stock+=x.qty;
-      }
-      // Reverse the empty-bottle credit too — this sale never happened
-      if(inv.linkedEmptyId){
-        const empty=S.inventory.find(i=>i.id===inv.linkedEmptyId);
-        if(empty) empty.stock=Math.max(0,empty.stock-x.qty);
-      }
-    });
-  }
-  S.snackOrders=S.snackOrders.filter(x=>x.id!==id);
-  persist();renderOrders();renderInventory();buildMenuGrid();updateLowStockBadge();
-  toast(o.isTab?'Deleted':'✓ Deleted — stock restored');
-  logActivity('delete_order',`Deleted order (${o.isTab?'tab':'standalone'}) — ${fmt(o.total)}`);
-}
+function delOrder(id){if(!confirm('Delete order?')) return;S.snackOrders=S.snackOrders.filter(o=>o.id!==id);persist();renderOrders();toast('Deleted');}
 
 // ═══════════ SESSIONS ═══════════
 function setSessPeriod(p,btn){
@@ -2297,13 +2264,7 @@ function exportReportExcel(){
 
 // ═══════════ CHANGELOG ═══════════
 const CHANGELOG=[
-  {version:'2.9.29',date:'2025-03-03',isNew:true,changes:[
-    {text:'BUG FIX: Deleting a standalone snack order never restored the stock it had deducted — the item was gone for good regardless of payment method. Not specific to VodafoneCash, this affected every deleted standalone order.',isNew:true},
-    {text:'Deleting a standalone order now correctly returns stock (raw stock, or ingredients for recipe items) and reverses any empty-bottle credit for returnable-bottle items',isNew:true},
-    {text:'Tab-checkout orders are deliberately NOT affected by this fix — their stock is handled at add-to-tab time, and Undo Checkout is already the correct tool for reversing those',isNew:true},
-    {text:'Order deletions are now logged to the Activity Log',isNew:true},
-  ]},
-  {version:'2.9.28',date:'2025-03-02',isNew:false,changes:[
+  {version:'2.9.28',date:'2025-03-02',isNew:true,changes:[
     {text:'NEW: Shift labels added to Tab order history too — same "🕐 #N Staff" badge now shown on closed/waived tabs, matching Sessions and Orders',isNew:true},
     {text:'NEW: Shift Number — every shift now has a permanent, sequential number (Shift #1, #2, #3...). Shown in Shift Management (open + closed shifts) and in every shift badge across Sessions, Orders, and Tabs history',isNew:true},
     {text:'Existing shifts from before this update were automatically numbered in chronological order — no data loss, no manual work needed',isNew:true},

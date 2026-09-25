@@ -1,0 +1,29 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Remote Dashboard (read-only monitoring) — v2.9.18
+    //
+    // No Firebase Auth is used here at all. The "Dashboard Access Code"
+    // set in Drift Zone's Settings IS the security — it's the Firestore
+    // document ID, and it should be long/random (the app's "🎲 Generate"
+    // button makes one like "driftzone-x7k2p9"). Anyone who doesn't know
+    // that exact code cannot read or write this data, because they can't
+    // guess a valid document path.
+    //
+    // This is deliberately simple for a low-stakes use case (viewing
+    // revenue/shift status). If you ever want real login-based security
+    // instead of a shared secret code, that's the full Firebase Auth
+    // migration discussed separately — not this feature.
+    match /dashboards/{code} {
+      allow read, write: if true;
+    }
+
+    // Deny everything else by default — add rules here as you add more
+    // Firestore-backed features later.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

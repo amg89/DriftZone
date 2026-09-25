@@ -1,0 +1,2288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Drift Zone Cloud</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050510;--sur:#0d0d2b;--s2:#12123a;--bdr:#1e1e5a;--txt:#e0e8ff;--mut:#6070a0;
+  --accent:#00d4ff;--purple:#c084fc;--green:#00ffaa;--yellow:#ffd600;--red:#ff2d78;--orange:#ff8c00;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:'Rajdhani',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.logo{font-family:'Orbitron',sans-serif;font-weight:900;font-size:28px;text-align:center;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--accent),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{text-align:center;font-size:10px;color:var(--mut);letter-spacing:3px;text-transform:uppercase;margin-bottom:22px}
+.card{background:var(--sur);border:1px solid var(--bdr);border-radius:14px;padding:20px;margin-bottom:12px}
+.ct{font-size:9px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;margin-bottom:12px;font-weight:600}
+.wrap{width:100%;max-width:400px}
+label{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px}
+input,select{width:100%;background:var(--s2);border:1px solid var(--bdr);color:var(--txt);border-radius:9px;padding:11px;font-size:14px;margin-bottom:12px;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+button{width:100%;border:none;border-radius:9px;padding:13px;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:.5px;font-family:inherit}
+.btn-p{background:linear-gradient(135deg,var(--accent),#0088aa);color:#001a22;margin-bottom:8px}
+.btn-g{background:linear-gradient(135deg,var(--green),#00aa77);color:#001a11;margin-bottom:8px}
+.btn-ghost{background:transparent;border:1px solid var(--bdr);color:var(--mut)}
+.err{color:var(--red);font-size:12px;text-align:center;margin-bottom:10px;display:none}
+.ok{color:var(--green);font-size:12px;text-align:center;margin-bottom:10px;display:none}
+.step{display:none}
+.step.active{display:block}
+.link-row{text-align:center;font-size:12px;color:var(--mut);margin-top:4px}
+.link-row a{color:var(--accent);cursor:pointer;text-decoration:none}
+#app-shell{display:none;width:100%;max-width:960px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;margin:2px}
+.b-green{background:rgba(0,255,170,.12);color:var(--green)}
+.b-red{background:rgba(255,45,120,.12);color:var(--red)}
+.b-mut{background:rgba(96,112,160,.15);color:var(--mut)}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.tab-bar{display:flex;gap:8px}
+.tab-btn{width:auto;padding:8px 16px;background:var(--s2);border:1px solid var(--bdr);color:var(--mut);border-radius:8px;font-size:12px}
+.tab-btn.active{background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent)}
+.panel{display:none}
+.panel.active{display:block}
+.station-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.station-card{background:var(--sur);border:2px solid var(--bdr);border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:.15s;position:relative}
+.station-card.free{border-color:rgba(0,255,170,.3)}
+.station-card.free:hover{border-color:var(--green);transform:translateY(-2px)}
+.station-card.busy{border-color:var(--red);background:rgba(255,45,120,.05)}
+.station-card .si{font-size:26px;margin-bottom:6px}
+.station-card .sn{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;margin-bottom:6px}
+.station-card .ss{font-size:9px;letter-spacing:1px;text-transform:uppercase}
+.station-card .ss.free-txt{color:var(--green)}
+.station-card .ss.busy-txt{color:var(--red)}
+.station-card .sp{font-size:11px;color:var(--mut);margin-top:4px}
+.station-card .st{font-family:'Orbitron',sans-serif;font-size:13px;color:var(--accent);margin-top:6px}
+.station-card .sc{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:900;color:var(--green)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.active{display:flex}
+.modal-box{background:var(--sur);border:1px solid var(--bdr);border-radius:16px;padding:22px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto}
+.pkg-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px}
+.pkg-opt{background:var(--s2);border:1px solid var(--bdr);border-radius:8px;padding:8px;text-align:center;font-size:11px;cursor:pointer}
+.pkg-opt.sel{background:rgba(0,212,255,.15);border-color:var(--accent);color:var(--accent)}
+.pay-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.pay-opt{background:var(--s2);border:1px solid var(--bdr);border-radius:8px;padding:9px;text-align:center;font-size:12px;cursor:pointer}
+.pay-opt.sel{background:rgba(0,255,170,.15);border-color:var(--green);color:var(--green)}
+.summary-row{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;color:var(--mut)}
+.summary-row.total{font-size:16px;font-weight:700;color:var(--txt);border-top:1px solid var(--bdr);padding-top:8px;margin-top:4px}
+.inv-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.inv-toolbar input[type=text]{margin-bottom:0;flex:1;min-width:140px}
+.inv-toolbar label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mut);white-space:nowrap;margin-bottom:0;text-transform:none;letter-spacing:0}
+.inv-row{display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.inv-icon{font-size:20px}
+.inv-name{font-weight:700;font-size:13px}
+.inv-meta{font-size:10px;color:var(--mut)}
+.inv-stock{font-family:'Orbitron',sans-serif;font-weight:900;font-size:14px}
+.inv-actions{display:flex;gap:5px}
+.icon-btn{width:auto;padding:5px 9px;font-size:11px;background:var(--s2);border:1px solid var(--bdr);color:var(--mut)}
+.icon-btn.danger{color:var(--red);border-color:rgba(255,45,120,.3)}
+.filter-bar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.filter-btn{width:auto;padding:6px 12px;font-size:11px;background:var(--s2);border:1px solid var(--bdr);color:var(--mut)}
+.filter-btn.active{background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent)}
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:16px}
+.menu-item{background:var(--s2);border:1px solid var(--bdr);border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer;position:relative}
+.menu-item.oos{opacity:.45;cursor:not-allowed}
+.menu-item.sel{border-color:var(--accent);background:rgba(0,212,255,.08)}
+.menu-item .mi-icon{font-size:20px}
+.menu-item .mi-name{font-size:10px;font-weight:700;margin:3px 0}
+.menu-item .mi-price{font-size:11px;color:var(--green)}
+.menu-item .mi-qty{position:absolute;top:4px;right:4px;background:var(--accent);color:#001a22;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:900}
+.cart-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bdr);font-size:12px}
+.cart-qty-btns{display:flex;align-items:center;gap:6px}
+.qty-btn{width:22px;height:22px;border-radius:5px;background:var(--s2);border:1px solid var(--bdr);color:var(--txt);font-size:12px;padding:0;line-height:1}
+.cost-input{width:64px;background:var(--s2);border:1px solid var(--bdr);color:var(--txt);border-radius:6px;padding:3px 6px;font-size:11px;text-align:right}
+.staff-row{display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.invite-code-box{background:var(--s2);border:1px dashed var(--accent);border-radius:10px;padding:14px;text-align:center;margin-top:10px;display:none}
+.invite-code-text{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--accent);letter-spacing:3px;margin-bottom:8px}
+.perm-toggle-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bdr);font-size:12px}
+.perm-toggle-row:last-child{border-bottom:none}
+.toggle-switch{position:relative;width:38px;height:20px;cursor:pointer}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--bdr);border-radius:20px;transition:.15s}
+.toggle-slider:before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:var(--txt);border-radius:50%;transition:.15s}
+.toggle-switch input:checked+.toggle-slider{background:var(--green)}
+.toggle-switch input:checked+.toggle-slider:before{transform:translateX(18px);background:#001a11}
+.station-editor{background:var(--s2);border:1px solid var(--bdr);border-radius:10px;padding:10px;margin-bottom:8px}
+.station-editor-title{font-family:'Orbitron',sans-serif;font-size:9px;color:var(--accent);letter-spacing:2px;margin-bottom:8px}
+.station-editor-grid{display:grid;grid-template-columns:1fr;gap:8px}
+.station-editor input,.station-editor select{margin-bottom:0}
+.perm-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.perm-item{background:var(--s2);border-radius:6px;padding:6px 9px;font-size:10px;display:flex;justify-content:space-between;align-items:center}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="auth-wrap">
+  <div class="logo">DRIFT ZONE</div>
+  <div class="sub">Cloud — Sign In</div>
+
+  <!-- Firebase connection setup (first-time, then remembered) -->
+  <div class="step" id="step-config">
+    <div class="card">
+      <div class="ct">🔌 Connect to Your Business</div>
+      <label>Firebase API Key</label>
+      <input type="text" id="cfg-apikey" placeholder="AIzaSy...">
+      <label>Firebase Project ID</label>
+      <input type="text" id="cfg-projectid" placeholder="e.g. my-cafe-12345">
+      <button class="btn-p" onclick="saveConfigAndInit()">Connect</button>
+      <div class="err" id="config-err"></div>
+    </div>
+  </div>
+
+  <!-- Sign in -->
+  <div class="step" id="step-signin">
+    <div class="card">
+      <div class="ct">🔑 Sign In</div>
+      <label>Email</label>
+      <input type="email" id="si-email" placeholder="you@yourcafe.com">
+      <label>Password</label>
+      <input type="password" id="si-password" placeholder="••••••••" onkeyup="if(event.key==='Enter') signIn()">
+      <button class="btn-p" onclick="signIn()">Sign In</button>
+      <div class="err" id="signin-err"></div>
+      <div class="link-row">New business? <a onclick="showStep('step-signup')">Create one</a> · Have a code? <a onclick="showStep('step-join')">Join a team</a></div>
+    </div>
+  </div>
+
+  <!-- Sign up (new business + owner) -->
+  <div class="step" id="step-signup">
+    <div class="card">
+      <div class="ct">＋ Create Your Business</div>
+      <label>Café / Business Name</label>
+      <input type="text" id="su-business" placeholder="e.g. Drift Zone — Maadi">
+      <label>Your Name</label>
+      <input type="text" id="su-name" placeholder="Owner name">
+      <label>Email</label>
+      <input type="email" id="su-email" placeholder="you@yourcafe.com">
+      <label>Password (min 6 characters)</label>
+      <input type="password" id="su-password" placeholder="••••••••">
+      <button class="btn-g" onclick="signUp()">Create Business</button>
+      <div class="err" id="signup-err"></div>
+      <div class="link-row"><a onclick="showStep('step-signin')">← Back to Sign In</a></div>
+    </div>
+  </div>
+
+  <!-- Join via invite code -->
+  <div class="step" id="step-join">
+    <div class="card">
+      <div class="ct">🎟 Join Your Team</div>
+      <label>Invite Code</label>
+      <input type="text" id="jn-code" placeholder="e.g. A1B2C3" style="text-transform:uppercase;letter-spacing:2px">
+      <label>Your Name</label>
+      <input type="text" id="jn-name" placeholder="Your name">
+      <label>Email</label>
+      <input type="email" id="jn-email" placeholder="you@example.com">
+      <label>Password (min 6 characters)</label>
+      <input type="password" id="jn-password" placeholder="••••••••">
+      <button class="btn-g" onclick="joinTeam()">Join Team</button>
+      <div class="err" id="join-err"></div>
+      <div class="link-row"><a onclick="showStep('step-signin')">← Back to Sign In</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- Authenticated shell — proves the pipeline works end-to-end;
+     real feature screens (stations, sessions, etc.) get built here
+     next, once auth + permissions are confirmed solid. -->
+<div id="app-shell">
+  <div class="top-bar">
+    <div>
+      <div class="logo" style="font-size:20px;text-align:left">DRIFT ZONE</div>
+      <div class="sub" style="text-align:left;margin-bottom:0" id="shell-business">—</div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showPanel('panel-stations',this)">🎮 Stations</button>
+      <button class="tab-btn" onclick="showPanel('panel-shifts',this)">🕐 Shifts</button>
+      <button class="tab-btn" onclick="showPanel('panel-inventory',this)">📦 Inventory</button>
+      <button class="tab-btn" onclick="showPanel('panel-snacks',this)">🍟 Snacks</button>
+      <button class="tab-btn" onclick="showPanel('panel-tabs',this)">🧾 Tabs</button>
+      <button class="tab-btn" onclick="showPanel('panel-purchases',this)">🛒 Purchases</button>
+      <button class="tab-btn" onclick="showPanel('panel-expenses',this)">📉 Expenses</button>
+      <button class="tab-btn" id="tab-btn-reports" style="display:none" onclick="showPanel('panel-reports',this)">📊 Reports</button>
+      <button class="tab-btn" id="tab-btn-staff" style="display:none" onclick="showPanel('panel-staff',this)">👥 Staff</button>
+      <button class="tab-btn" id="tab-btn-settings" style="display:none" onclick="showPanel('panel-settings',this)">⚙️ Settings</button>
+      <button class="tab-btn" onclick="showPanel('panel-account',this)">👤 Account</button>
+    </div>
+  </div>
+
+  <div class="panel active" id="panel-stations">
+    <div class="card">
+      <div class="ct">🎮 Stations <span id="stations-conn-status" style="color:var(--green)">● live</span></div>
+      <div class="station-grid" id="station-grid"><div style="color:var(--mut);font-size:11px;grid-column:1/-1">Loading…</div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-shifts">
+    <div class="card" id="shift-current-card">
+      <div class="ct">🕐 Current Shift</div>
+      <div id="shift-current-body">Loading…</div>
+    </div>
+    <div class="card">
+      <div class="ct">📜 Recent Shifts</div>
+      <div id="shift-history-body" style="font-size:11px;color:var(--mut)">Loading…</div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-inventory">
+    <div class="card">
+      <div class="ct">📦 Inventory</div>
+      <div class="inv-toolbar">
+        <input type="text" id="inv-search" placeholder="🔍 Search items…" oninput="renderInventoryList()">
+        <label><input type="checkbox" id="inv-hide-oos" onchange="renderInventoryList()" style="width:14px;height:14px"> Hide out of stock</label>
+        <button class="btn-g" id="inv-add-btn" onclick="openItemModal(null)" style="width:auto;padding:8px 14px;font-size:12px">＋ Add Item</button>
+      </div>
+      <div id="inventory-list"><div style="color:var(--mut);font-size:11px">Loading…</div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-snacks">
+    <div class="card">
+      <div class="ct">🍟 Order Snacks &amp; Drinks</div>
+      <div class="filter-bar" id="snack-filter-bar">
+        <button class="filter-btn active" data-cat="all" onclick="setSnackFilter('all',this)">All</button>
+        <button class="filter-btn" data-cat="drink" onclick="setSnackFilter('drink',this)">🥤 Drink</button>
+        <button class="filter-btn" data-cat="snack" onclick="setSnackFilter('snack',this)">🍿 Snack</button>
+        <button class="filter-btn" data-cat="bar" onclick="setSnackFilter('bar',this)">🍺 Bar</button>
+      </div>
+      <div class="inv-toolbar">
+        <input type="text" id="snack-search" placeholder="🔍 Search…" oninput="renderSnackMenu()">
+        <label><input type="checkbox" id="snack-hide-oos" onchange="renderSnackMenu()" style="width:14px;height:14px"> Hide out of stock</label>
+      </div>
+      <div class="menu-grid" id="snack-menu"></div>
+    </div>
+    <div class="card" id="cart-card" style="display:none">
+      <div class="ct">🛒 Cart</div>
+      <div id="cart-rows"></div>
+      <div class="summary-row total"><span>TOTAL</span><span id="cart-total">—</span></div>
+      <button class="btn-g" onclick="openCheckoutModal()" style="margin-top:10px">Checkout</button>
+      <button class="btn-ghost" onclick="clearCart()">Clear Cart</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-tabs">
+    <div class="card">
+      <div class="ct">🧾 Open a New Tab</div>
+      <label>Customer / Tab Name</label>
+      <input type="text" id="newtab-name" placeholder="e.g. Ahmed">
+      <label>Station / Table (optional)</label>
+      <input type="text" id="newtab-station" placeholder="e.g. PS5-2">
+      <button class="btn-g" onclick="openNewTab()">＋ Open New Tab</button>
+    </div>
+    <div class="card">
+      <div class="ct">📋 Open Tabs</div>
+      <div id="tabs-list"><div style="color:var(--mut);font-size:11px">Loading…</div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-purchases">
+    <div class="card">
+      <div class="ct">🛒 Record a Purchase</div>
+      <label>Vendor / Supplier</label>
+      <input type="text" id="pur-vendor" placeholder="e.g. Local Distributor">
+      <label style="margin-top:8px">Add Items</label>
+      <input type="text" id="pur-search" placeholder="🔍 Search inventory…" oninput="renderPurchasePicker()">
+      <div class="menu-grid" id="purchase-picker" style="margin-top:8px"></div>
+      <div class="ct" style="margin-top:10px;font-size:12px">Items in this Purchase</div>
+      <div id="purchase-cart-rows"><div style="color:var(--mut);font-size:11px">No items added yet.</div></div>
+      <div class="summary-row total"><span>TOTAL COST</span><span id="purchase-total">—</span></div>
+      <button class="btn-g" onclick="confirmPurchase()" style="margin-top:8px">✓ Save Purchase (adds to stock)</button>
+      <button class="btn-ghost" onclick="clearPurchaseCart()">Clear</button>
+    </div>
+    <div class="card">
+      <div class="ct">📜 Recent Purchases</div>
+      <div id="purchase-history-body" style="font-size:11px;color:var(--mut)">Loading…</div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-expenses">
+    <div class="card">
+      <div class="ct">📉 Log an Expense</div>
+      <label>Description</label>
+      <input type="text" id="exp-desc" placeholder="e.g. Electricity bill">
+      <label>Category</label>
+      <select id="exp-cat">
+        <option value="rent">Rent</option>
+        <option value="utilities">Utilities</option>
+        <option value="salaries">Salaries</option>
+        <option value="maintenance">Maintenance</option>
+        <option value="supplies">Supplies</option>
+        <option value="marketing">Marketing</option>
+        <option value="other">Other</option>
+      </select>
+      <label>Amount</label>
+      <input type="number" id="exp-amount" step="0.01" min="0">
+      <label>Date</label>
+      <input type="date" id="exp-date">
+      <button class="btn-g" onclick="confirmExpense()">✓ Save Expense</button>
+    </div>
+    <div class="card">
+      <div class="ct">📜 Recent Expenses <span id="exp-month-total" style="float:right;color:var(--mut);font-size:11px"></span></div>
+      <div id="expense-history-body" style="font-size:11px;color:var(--mut)">Loading…</div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-reports">
+    <div class="card">
+      <div class="ct">📊 Reports</div>
+      <label>From</label>
+      <input type="date" id="rep-from">
+      <label>To</label>
+      <input type="date" id="rep-to">
+      <button class="btn-g" onclick="runReport()">📊 Run Report</button>
+    </div>
+    <div class="card" id="rep-summary-card" style="display:none">
+      <div class="ct">💰 Sales Summary</div>
+      <div id="rep-summary-body"></div>
+    </div>
+    <div class="card" id="rep-profit-card" style="display:none">
+      <div class="ct">📈 Profit</div>
+      <div id="rep-profit-body"></div>
+    </div>
+    <div class="card" id="rep-items-card" style="display:none">
+      <div class="ct">🏆 Item Sales</div>
+      <div id="rep-items-body"></div>
+    </div>
+    <div class="card" id="rep-eval-card" style="display:none">
+      <div class="ct">📦 Inventory Valuation <span style="color:var(--mut);font-size:10px;font-weight:400">(current stock, not date-ranged)</span></div>
+      <div id="rep-eval-body"></div>
+    </div>
+    <div class="card" id="rep-activity-card" style="display:none">
+      <div class="ct">📝 Recent Activity</div>
+      <div id="rep-activity-body" style="font-size:11px;color:var(--mut)">Loading…</div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-staff">
+    <div class="card">
+      <div class="ct">🎟 Invite Staff</div>
+      <label>Role</label>
+      <select id="invite-role">
+        <option value="staff">Staff</option>
+        <option value="manager">Manager</option>
+      </select>
+      <button class="btn-g" onclick="generateInvite()">Generate Invite Code</button>
+      <div class="invite-code-box" id="invite-code-box">
+        <div class="invite-code-text" id="invite-code-text">—</div>
+        <div style="font-size:10px;color:var(--mut)">Share this code — they'll enter it under "Join a Team" when signing up. One-time use.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">👥 Team</div>
+      <div id="staff-list">Loading…</div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-settings">
+    <div class="card">
+      <div class="ct">⚙️ Business Settings</div>
+      <label>Café Name</label>
+      <input type="text" id="set-name">
+      <label>Currency Symbol</label>
+      <input type="text" id="set-currency" maxlength="3">
+      <label>Default Rate / hr</label>
+      <input type="number" id="set-rate" step="0.01" min="0">
+      <label>Number of Stations</label>
+      <input type="number" id="set-numstations" min="1" max="20" onchange="buildStationEditors()">
+      <label style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <input type="checkbox" id="set-alarm" style="width:16px;height:16px"> Station alarm enabled
+      </label>
+    </div>
+    <div class="card">
+      <div class="ct">🎮 Stations</div>
+      <div id="station-editors"></div>
+    </div>
+    <button class="btn-g" onclick="saveBranchSettings()">Save Settings</button>
+  </div>
+
+  <div class="panel" id="panel-account">
+    <div class="card">
+      <div class="ct">👤 Signed In</div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px" id="shell-name">—</div>
+      <div id="shell-role-badge"></div>
+    </div>
+    <div class="card">
+      <div class="ct">🔐 Your Permissions</div>
+      <div class="perm-grid" id="shell-perms"></div>
+    </div>
+    <button class="btn-ghost" onclick="signOutUser()">Sign Out</button>
+  </div>
+</div>
+
+<!-- OPEN SESSION MODAL -->
+<div class="modal-overlay" id="modal-open">
+  <div class="modal-box">
+    <div class="ct" id="open-modal-title">Open Station</div>
+    <label>Player / Customer Name</label>
+    <input type="text" id="open-player" placeholder="Guest">
+    <label>Time Package</label>
+    <div class="pkg-row" id="open-pkg-row"></div>
+    <div class="summary-row"><span>Rate</span><span id="open-rate-display">—</span></div>
+    <button class="btn-g" onclick="confirmOpenSession()" style="margin-top:10px">▶ Start Session</button>
+    <button class="btn-ghost" onclick="closeModal('modal-open')">Cancel</button>
+  </div>
+</div>
+
+<!-- CLOSE SESSION MODAL -->
+<div class="modal-overlay" id="modal-close">
+  <div class="modal-box">
+    <div class="ct" id="close-modal-title">Close Station</div>
+    <div class="summary-row"><span>Elapsed</span><span id="close-elapsed">—</span></div>
+    <div class="summary-row"><span>Calculated</span><span id="close-calc">—</span></div>
+    <label>Custom Amount (optional — leave blank to use calculated)</label>
+    <input type="number" id="close-custom" placeholder="0.00" step="0.01" min="0">
+    <label>Payment Method</label>
+    <div class="pay-row" id="close-pay-row">
+      <div class="pay-opt sel" data-pay="Cash" onclick="selectClosePay(this)">💵 Cash</div>
+      <div class="pay-opt" data-pay="VodafoneCash" onclick="selectClosePay(this)">📱 VodafoneCash</div>
+      <div class="pay-opt" data-pay="Instapay" onclick="selectClosePay(this)">⚡ Instapay</div>
+      <div class="pay-opt" data-pay="Unpaid" onclick="selectClosePay(this)">📋 Unpaid</div>
+    </div>
+    <div class="summary-row total"><span>TOTAL</span><span id="close-total">—</span></div>
+    <button class="btn-p" onclick="confirmCloseSession()" style="margin-top:10px">■ Close &amp; Charge</button>
+    <button class="btn-ghost" onclick="closeModal('modal-close')">Cancel</button>
+  </div>
+</div>
+
+<!-- CLOSE SHIFT / CASH RECONCILIATION MODAL -->
+<div class="modal-overlay" id="modal-shift-close">
+  <div class="modal-box">
+    <div class="ct">💰 Cash Reconciliation</div>
+    <div class="summary-row"><span>Starting Cash Float</span><span id="sc-float">—</span></div>
+    <div class="summary-row"><span>+ Cash Sales This Shift</span><span id="sc-cashsales">—</span></div>
+    <div class="summary-row total"><span>= Expected Cash</span><span id="sc-expected">—</span></div>
+    <label style="margin-top:8px">Actual Cash Counted</label>
+    <input type="number" id="sc-actual" placeholder="Count the drawer and enter it here" step="0.01" min="0">
+    <button class="btn-p" onclick="confirmCloseShift()" style="margin-top:10px">✓ Confirm &amp; Close Shift</button>
+    <button class="btn-ghost" onclick="closeModal('modal-shift-close')">Cancel</button>
+  </div>
+</div>
+
+<!-- ADD/EDIT ITEM MODAL -->
+<div class="modal-overlay" id="modal-item">
+  <div class="modal-box">
+    <div class="ct" id="item-modal-title">＋ Add Item</div>
+    <label>Icon (emoji)</label>
+    <input type="text" id="it-icon" placeholder="🥤" maxlength="4">
+    <label>Name</label>
+    <input type="text" id="it-name" placeholder="e.g. Pepsi Can">
+    <label>Category</label>
+    <select id="it-cat">
+      <option value="drink">🥤 Drink</option>
+      <option value="snack">🍿 Snack</option>
+      <option value="bar">🍺 Bar</option>
+      <option value="other">📦 Other</option>
+    </select>
+    <label>Sale Price</label>
+    <input type="number" id="it-price" step="0.01" min="0" placeholder="0.00">
+    <label>Cost Price</label>
+    <input type="number" id="it-cost" step="0.01" min="0" placeholder="0.00">
+    <label>Stock</label>
+    <input type="number" id="it-stock" step="1" min="0" placeholder="0">
+    <label>Low Stock Alert</label>
+    <input type="number" id="it-low" step="1" min="0" placeholder="5">
+    <button class="btn-g" onclick="saveItem()" style="margin-top:8px">Save Item</button>
+    <button class="btn-ghost" onclick="closeModal('modal-item')">Cancel</button>
+    <p style="font-size:10px;color:var(--mut);text-align:center;margin-top:10px">Recipe-based items and returnable bottles aren't ported yet — coming in a follow-up.</p>
+  </div>
+</div>
+
+<!-- CHECKOUT MODAL -->
+<div class="modal-overlay" id="modal-checkout">
+  <div class="modal-box">
+    <div class="ct">💳 Checkout</div>
+    <div class="summary-row total"><span>TOTAL</span><span id="checkout-total">—</span></div>
+    <label style="margin-top:10px">Payment Method</label>
+    <div class="pay-row" id="checkout-pay-row">
+      <div class="pay-opt sel" data-pay="Cash" onclick="selectCheckoutPay(this)">💵 Cash</div>
+      <div class="pay-opt" data-pay="VodafoneCash" onclick="selectCheckoutPay(this)">📱 VodafoneCash</div>
+      <div class="pay-opt" data-pay="Instapay" onclick="selectCheckoutPay(this)">⚡ Instapay</div>
+      <div class="pay-opt" data-pay="Unpaid" onclick="selectCheckoutPay(this)">📋 Unpaid</div>
+    </div>
+    <button class="btn-g" onclick="confirmCheckout()" style="margin-top:8px">✓ Confirm Order</button>
+    <button class="btn-ghost" onclick="closeModal('modal-checkout')">Cancel</button>
+  </div>
+</div>
+
+<!-- TAB DETAIL MODAL -->
+<div class="modal-overlay" id="modal-tab">
+  <div class="modal-box" style="max-width:480px">
+    <div class="ct" id="tab-modal-title">Tab</div>
+    <div class="filter-bar" id="tab-filter-bar">
+      <button class="filter-btn active" data-cat="all" onclick="setTabFilter('all',this)">All</button>
+      <button class="filter-btn" data-cat="drink" onclick="setTabFilter('drink',this)">🥤 Drink</button>
+      <button class="filter-btn" data-cat="snack" onclick="setTabFilter('snack',this)">🍿 Snack</button>
+      <button class="filter-btn" data-cat="bar" onclick="setTabFilter('bar',this)">🍺 Bar</button>
+    </div>
+    <input type="text" id="tab-search" placeholder="🔍 Search…" oninput="renderTabMenu()" style="margin-bottom:8px">
+    <div class="menu-grid" id="tab-menu"></div>
+    <div class="ct" style="margin-top:10px;font-size:12px">Items on this Tab</div>
+    <div id="tab-items-rows" style="margin-bottom:8px"></div>
+    <div class="summary-row total"><span>TOTAL</span><span id="tab-modal-total">—</span></div>
+    <button class="btn-g" onclick="openCloseTabModal()" style="margin-top:8px">✓ Close &amp; Pay</button>
+    <button class="btn-ghost" onclick="voidTab()" id="tab-void-btn" style="display:none;color:var(--red)">🗑 Void Tab (restores stock)</button>
+    <button class="btn-ghost" onclick="closeModal('modal-tab')">Close Window</button>
+  </div>
+</div>
+
+<!-- CLOSE TAB (PAYMENT) MODAL -->
+<div class="modal-overlay" id="modal-tab-close">
+  <div class="modal-box">
+    <div class="ct">💳 Close Tab</div>
+    <div class="summary-row total"><span>TOTAL</span><span id="tab-close-total">—</span></div>
+    <label style="margin-top:10px">Payment Method</label>
+    <div class="pay-row" id="tab-close-pay-row">
+      <div class="pay-opt sel" data-pay="Cash" onclick="selectTabClosePay(this)">💵 Cash</div>
+      <div class="pay-opt" data-pay="VodafoneCash" onclick="selectTabClosePay(this)">📱 VodafoneCash</div>
+      <div class="pay-opt" data-pay="Instapay" onclick="selectTabClosePay(this)">⚡ Instapay</div>
+      <div class="pay-opt" data-pay="Waived" onclick="selectTabClosePay(this)">🎁 Waived</div>
+    </div>
+    <button class="btn-g" onclick="confirmCloseTab()" style="margin-top:8px">✓ Confirm &amp; Close</button>
+    <button class="btn-ghost" onclick="closeModal('modal-tab-close')">Cancel</button>
+  </div>
+</div>
+
+<!-- STOCK HISTORY MODAL -->
+<div class="modal-overlay" id="modal-stock-history">
+  <div class="modal-box">
+    <div class="ct" id="stock-history-title">📜 Stock History</div>
+    <label>Compute stock as of date (end of day)</label>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="date" id="sh-asof-date" style="flex:1">
+      <button class="btn-g" style="width:auto;padding:8px 14px" onclick="computeStockAsOf()">Compute</button>
+    </div>
+    <div id="sh-asof-result" style="margin:8px 0;font-size:12px;color:var(--accent);font-weight:700"></div>
+    <div class="ct" style="margin-top:10px;font-size:12px">Recent Movements</div>
+    <div id="sh-movements-body" style="font-size:11px;color:var(--mut);max-height:260px;overflow-y:auto"></div>
+    <button class="btn-ghost" onclick="closeModal('modal-stock-history')">Close</button>
+  </div>
+</div>
+
+<!-- EDIT STAFF PERMISSIONS MODAL -->
+<div class="modal-overlay" id="modal-perms">
+  <div class="modal-box">
+    <div class="ct" id="perms-modal-title">Permissions</div>
+    <div id="perms-toggle-list"></div>
+    <button class="btn-g" onclick="savePermissions()" style="margin-top:12px">Save</button>
+    <button class="btn-ghost" onclick="closeModal('modal-perms')">Cancel</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, writeBatch, increment, deleteField, collection, query, where,
+  onSnapshot, serverTimestamp, Timestamp, runTransaction, enableIndexedDbPersistence
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signOut, onAuthStateChanged, setPersistence, browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// ─────────────────────────────────────────────────────────────
+// PERMISSION DEFAULTS — applied at account creation based on role,
+// then freely overridable per person from Staff Management later.
+// Mirrors DATA_MODEL.md exactly — keep these in sync if that changes.
+// ─────────────────────────────────────────────────────────────
+const PERMISSION_DEFAULTS = {
+  staff: {
+    void_transaction:false, apply_discount:false, edit_stock:true, edit_prices:false,
+    manage_inventory_items:false, view_reports:false, view_profit:false, view_evaluation:false,
+    review_cash_recon:false, manage_staff:false, edit_settings:false
+  },
+  manager: {
+    void_transaction:true, apply_discount:true, edit_stock:true, edit_prices:true,
+    manage_inventory_items:true, view_reports:true, view_profit:false, view_evaluation:false,
+    review_cash_recon:true, manage_staff:false, edit_settings:false
+  },
+  owner: {
+    void_transaction:true, apply_discount:true, edit_stock:true, edit_prices:true,
+    manage_inventory_items:true, view_reports:true, view_profit:true, view_evaluation:true,
+    review_cash_recon:true, manage_staff:true, edit_settings:true
+  }
+};
+const PERM_LABELS = {
+  void_transaction:'Void transactions', apply_discount:'Apply discounts', edit_stock:'Edit stock',
+  edit_prices:'Edit prices', manage_inventory_items:'Manage items', view_reports:'View reports',
+  view_profit:'View profit', view_evaluation:'View valuation', review_cash_recon:'Cash reconciliation',
+  manage_staff:'Manage staff', edit_settings:'Business settings'
+};
+
+let db=null, authInst=null;
+
+function showStep(id){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.err,.ok').forEach(e=>e.style.display='none');
+}
+window.showStep = showStep;
+
+function showErr(id,msg){ const el=document.getElementById(id); el.textContent='⚠ '+msg; el.style.display='block'; }
+
+// ── Step 0: connect to the Firebase project ──
+window.saveConfigAndInit = async function(){
+  const apiKey=document.getElementById('cfg-apikey').value.trim();
+  const projectId=document.getElementById('cfg-projectid').value.trim();
+  if(!apiKey||!projectId){ showErr('config-err','Fill in both fields'); return; }
+  try{
+    const app=initializeApp({apiKey,projectId,authDomain:`${projectId}.firebaseapp.com`});
+    db=getFirestore(app);
+    authInst=getAuth(app);
+    await setPersistence(authInst,browserLocalPersistence);
+    try{ await enableIndexedDbPersistence(db); }catch(e){/* multiple tabs open — fine, offline just won't cache in this tab */}
+    localStorage.setItem('dzc_config',JSON.stringify({apiKey,projectId}));
+    onAuthStateChanged(authInst, handleAuthState);
+    showStep('step-signin');
+  }catch(e){
+    showErr('config-err','Could not connect — check your API Key and Project ID');
+  }
+};
+
+async function handleAuthState(user){
+  if(!user){
+    [sessionsUnsub,shiftUnsub,inventoryUnsub,staffUnsub,branchUnsub,tabsUnsub,purchasesUnsub,expensesUnsub].forEach(u=>u&&u());
+    sessionsUnsub=shiftUnsub=inventoryUnsub=staffUnsub=branchUnsub=null;
+    document.getElementById('app-shell').style.display='none';
+    document.getElementById('auth-wrap').style.display='block';
+    return;
+  }
+  const userSnap=await getDoc(doc(db,'users',user.uid));
+  if(!userSnap.exists()){
+    // Auth account exists but signup never finished writing the user doc
+    // (e.g. page closed mid-signup). Fail safely back to signup.
+    showStep('step-signup');
+    return;
+  }
+  const userData=userSnap.data();
+  const tenantSnap=await getDoc(doc(db,'tenants',userData.tenantId));
+  renderShell(userData, tenantSnap.exists()?tenantSnap.data():null);
+}
+
+function renderShell(userData, tenantData){
+  document.getElementById('auth-wrap').style.display='none';
+  document.getElementById('app-shell').style.display='block';
+  document.getElementById('shell-business').textContent=(tenantData?.name||'—').toUpperCase();
+  document.getElementById('shell-name').textContent=userData.name;
+  const roleColors={owner:'b-green',manager:'b-mut',staff:'b-mut',superadmin:'b-red'};
+  document.getElementById('shell-role-badge').innerHTML=
+    `<span class="badge ${roleColors[userData.role]||'b-mut'}">${userData.role.toUpperCase()}</span>`;
+  const perms=userData.permissions||{};
+  const isImplicitAll=userData.role==='owner'||userData.role==='superadmin';
+  document.getElementById('shell-perms').innerHTML=Object.keys(PERM_LABELS).map(key=>{
+    const has=isImplicitAll||perms[key]===true;
+    return `<div class="perm-item"><span>${PERM_LABELS[key]}</span><span style="color:${has?'var(--green)':'var(--red)'}">${has?'✓':'✕'}</span></div>`;
+  }).join('');
+  document.getElementById('tab-btn-reports').style.display=myHasPerm2(userData,'view_reports')?'inline-block':'none';
+  document.getElementById('tab-btn-staff').style.display=myHasPerm2(userData,'manage_staff')?'inline-block':'none';
+  document.getElementById('tab-btn-settings').style.display=myHasPerm2(userData,'edit_settings')?'inline-block':'none';
+  loadBranchAndListen(userData);
+}
+// (myHasPerm relies on currentUserData being set, which isn't true yet
+// at this exact point in the flow — this small variant takes the userData
+// directly instead, used only for this one early visibility check.)
+function myHasPerm2(userData,key){
+  if(!userData) return false;
+  if(userData.role==='owner'||userData.role==='superadmin') return true;
+  return userData.permissions?.[key]===true;
+}
+
+// ═══════════ STATIONS + SESSIONS (Phase 2 — first feature port) ═══════════
+// State is module-level since this is a single-page app with one active
+// branch view at a time — simpler than threading it through every call.
+let currentUserData=null, currentTenantId=null, currentBranchId=null, currentBranchData=null;
+let openSessions={}; // stationIdx -> session doc (id + data), live from onSnapshot
+let sessionsUnsub=null;
+let activeStationIdx=null, activeSessionId=null, selectedPkgIdx=0, selectedClosePayment='Cash';
+let currentShift=null, shiftUnsub=null; // the branch's currently open shift, live
+let branchUnsub=null;
+let inventoryItems=[], inventoryUnsub=null, editingItemId=null;
+let cart={}, snackFilter='all'; // cart: itemId -> qty (local UI state, not synced — matches local app's approach)
+let teamMembers=[], staffUnsub=null, editingPermsUid=null;
+let openTabs=[], tabsUnsub=null, activeTabId=null, tabFilter='all', selectedTabClosePay='Cash';
+let purchaseCart={}, purchaseHistory=[], purchasesUnsub=null; // purchaseCart: itemId -> {qty, unitCost}
+let expenseHistory=[], expensesUnsub=null;
+let stockHistoryItemId=null, stockHistoryMovements=[];
+const EXP_CAT_LABELS={rent:'Rent',utilities:'Utilities',salaries:'Salaries',maintenance:'Maintenance',supplies:'Supplies',marketing:'Marketing',other:'Other'};
+
+async function loadBranchAndListen(userData){
+  currentUserData=userData;
+  currentTenantId=userData.tenantId;
+  currentBranchId=userData.branchIds[0]; // single-branch focus for this first port; branch switcher comes later
+  if(!currentBranchId){
+    document.getElementById('station-grid').innerHTML='<div style="color:var(--red);font-size:11px;grid-column:1/-1">No branch assigned to your account yet.</div>';
+    return;
+  }
+  const branchSnap=await getDoc(doc(db,'branches',currentBranchId));
+  if(!branchSnap.exists()){
+    document.getElementById('station-grid').innerHTML='<div style="color:var(--red);font-size:11px;grid-column:1/-1">Branch not found.</div>';
+    return;
+  }
+  currentBranchData=branchSnap.data();
+
+  // Live branch doc — station config, rates, café name etc. now update
+  // everywhere instantly when changed from Settings, on any device.
+  if(branchUnsub) branchUnsub();
+  branchUnsub=onSnapshot(doc(db,'branches',currentBranchId), snap=>{
+    if(!snap.exists()) return;
+    currentBranchData=snap.data();
+    renderStationGrid();
+    if(document.getElementById('panel-settings')?.classList.contains('active')) loadSettingsForm();
+  });
+
+  // Live, real-time station occupancy — this is the upgrade a real
+  // database enables: every signed-in device sees the same station
+  // status update instantly, no manual refresh, no localStorage.
+  if(sessionsUnsub) sessionsUnsub();
+  const q=query(collection(db,'sessions'), where('branchId','==',currentBranchId), where('status','==','open'));
+  sessionsUnsub=onSnapshot(q, snap=>{
+    openSessions={};
+    snap.forEach(d=>{ openSessions[d.data().stationIdx]={id:d.id,...d.data()}; });
+    renderStationGrid();
+    document.getElementById('stations-conn-status').textContent='● live';
+    document.getElementById('stations-conn-status').style.color='var(--green)';
+  }, err=>{
+    document.getElementById('stations-conn-status').textContent='● connection issue';
+    document.getElementById('stations-conn-status').style.color='var(--red)';
+  });
+
+  // Live listener on this branch's currently open shift — Stations and
+  // Shifts panel both depend on knowing whether one is open.
+  if(shiftUnsub) shiftUnsub();
+  const shiftQ=query(collection(db,'shifts'), where('branchId','==',currentBranchId), where('status','==','open'));
+  shiftUnsub=onSnapshot(shiftQ, snap=>{
+    currentShift = snap.empty ? null : {id:snap.docs[0].id,...snap.docs[0].data()};
+    renderShiftPanel();
+    renderShiftHistory();
+  });
+
+  // Live inventory — every device sees stock changes instantly.
+  if(inventoryUnsub) inventoryUnsub();
+  const invQ=query(collection(db,'inventory'), where('branchId','==',currentBranchId));
+  inventoryUnsub=onSnapshot(invQ, snap=>{
+    inventoryItems=[];
+    snap.forEach(d=>inventoryItems.push({id:d.id,...d.data()}));
+    inventoryItems.sort((a,b)=>a.name.localeCompare(b.name));
+    renderInventoryList();
+    renderSnackMenu();
+  });
+
+  // Live team list — any signed-in tenant member can view (Firestore
+  // rules already allow this), edit controls are gated separately.
+  if(staffUnsub) staffUnsub();
+  const staffQ=query(collection(db,'users'), where('tenantId','==',currentTenantId));
+  staffUnsub=onSnapshot(staffQ, snap=>{
+    teamMembers=[];
+    snap.forEach(d=>teamMembers.push({id:d.id,...d.data()}));
+    teamMembers.sort((a,b)=>a.name.localeCompare(b.name));
+    renderStaffList();
+  });
+
+  // Live open tabs — same real-time upgrade as stations: any device
+  // adding a snack to a customer's tab shows up everywhere instantly.
+  if(tabsUnsub) tabsUnsub();
+  const tabsQ=query(collection(db,'clientTabs'), where('branchId','==',currentBranchId), where('status','==','open'));
+  tabsUnsub=onSnapshot(tabsQ, snap=>{
+    openTabs=[];
+    snap.forEach(d=>openTabs.push({id:d.id,...d.data()}));
+    openTabs.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+    renderTabsList();
+    // Keep an open detail modal in sync if the active tab changed
+    // (e.g. another device added an item while this one had it open).
+    if(activeTabId && document.getElementById('modal-tab').classList.contains('active')){
+      const t=openTabs.find(x=>x.id===activeTabId);
+      if(t){ renderTabMenu(); renderTabItemsRows(); }
+      else{ closeModal('modal-tab'); activeTabId=null; } // tab was closed/voided elsewhere
+    }
+  });
+
+  // Purchase history — no "open/closed" status on these, just every
+  // record for the branch, newest first.
+  if(purchasesUnsub) purchasesUnsub();
+  const purQ=query(collection(db,'purchases'), where('branchId','==',currentBranchId));
+  purchasesUnsub=onSnapshot(purQ, snap=>{
+    purchaseHistory=[];
+    snap.forEach(d=>purchaseHistory.push({id:d.id,...d.data()}));
+    purchaseHistory.sort((a,b)=>(b.date||'').localeCompare(a.date||'') || (b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+    renderPurchaseHistory();
+  });
+
+  // Expense history — same shape as purchases: every record for the
+  // branch, no open/closed status.
+  if(expensesUnsub) expensesUnsub();
+  const expQ=query(collection(db,'expenses'), where('branchId','==',currentBranchId));
+  expensesUnsub=onSnapshot(expQ, snap=>{
+    expenseHistory=[];
+    snap.forEach(d=>expenseHistory.push({id:d.id,...d.data()}));
+    expenseHistory.sort((a,b)=>(b.date||'').localeCompare(a.date||'') || (b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+    renderExpenseHistory();
+  });
+}
+
+function renderStationGrid(){
+  const el=document.getElementById('station-grid');if(!el||!currentBranchData) return;
+  const s=currentBranchData.settings;
+  const icons=['🎮','🕹️','👾','🏎️','🎯','🎲'];
+  let html='';
+  for(let i=0;i<s.numStations;i++){
+    const os=openSessions[i];
+    const name=s.stationNames?.[i]||'Station '+(i+1);
+    const type=s.stationTypes?.[i]||'PS5';
+    if(os){
+      html+=`<div class="station-card busy" onclick="closeSessionModal(${i})">
+        <div class="si">${icons[i%icons.length]}</div>
+        <div class="sn">${name} <span class="badge b-red" style="font-size:8px">${type}</span></div>
+        <div class="ss busy-txt">● IN USE</div>
+        <div class="sp">${os.player}</div>
+        <div class="st" id="st-elapsed-${i}">--</div>
+        <div class="sc" id="st-cost-${i}">--</div>
+      </div>`;
+    }else{
+      html+=`<div class="station-card free" onclick="openSessionModal(${i})">
+        <div class="si">${icons[i%icons.length]}</div>
+        <div class="sn">${name} <span class="badge b-mut" style="font-size:8px">${type}</span></div>
+        <div class="ss free-txt">○ FREE</div>
+        <div class="sp" style="opacity:0">—</div>
+        <div class="st" style="opacity:0">—</div>
+        <div class="sc" style="opacity:0">—</div>
+      </div>`;
+    }
+  }
+  el.innerHTML=html;
+}
+
+// Lightweight per-second tick — updates only the elapsed/cost text
+// nodes on busy cards, avoiding a full grid re-render every second
+// (keeps hover states and avoids flicker).
+setInterval(()=>{
+  Object.entries(openSessions).forEach(([idx,os])=>{
+    const elEl=document.getElementById('st-elapsed-'+idx);
+    const costEl=document.getElementById('st-cost-'+idx);
+    if(!elEl||!costEl) return;
+    const mins=Math.floor((Date.now()-os.startTs)/60000);
+    const cost=mins/60*os.rate;
+    if(os.packageMins>0){
+      const rem=os.packageMins-mins;
+      elEl.textContent=rem<=0?'TIME UP':fmtMins(rem)+' left';
+      elEl.style.color=rem<=5?'var(--red)':'var(--accent)';
+    }else{
+      elEl.textContent=fmtMins(mins)+' elapsed';
+      elEl.style.color='var(--accent)';
+    }
+    costEl.textContent=fmtMoney(cost);
+  });
+},1000);
+
+function fmtMins(m){
+  m=Math.max(0,m);
+  const h=Math.floor(m/60), mm=m%60;
+  return h>0?`${h}h ${mm}m`:`${mm}m`;
+}
+function fmtMoney(n){ return (currentBranchData?.settings?.currency||'$')+Number(n).toFixed(2); }
+
+// Insert-only audit trail — "who did what", the thing that actually
+// matters once staff has real write access to operational data (which
+// is the case as of the permission-model fix). Fire-and-forget on
+// purpose: a logging failure must never block the real action it's
+// describing, so this only ever warns to the console, never alerts.
+// Queues one stockMovements entry into an in-flight writeBatch — this is
+// what makes "stock as of any date" possible: every stock change writes
+// an immutable event (not just the final number), in the SAME atomic
+// batch as the stock update itself, so the ledger can never drift out
+// of sync with the actual stock field.
+function queueStockMovement(batch, itemId, delta, reason, refId){
+  if(!delta) return; // a net-zero change (e.g. qty edited then edited back) logs nothing
+  batch.set(doc(collection(db,'stockMovements')), {
+    tenantId:currentTenantId, branchId:currentBranchId, itemId, delta, reason,
+    refId:refId||null, timestamp:serverTimestamp()
+  });
+}
+
+async function logActivity(action, detail){
+  if(!currentTenantId || !currentBranchId || !authInst?.currentUser) return;
+  try{
+    await setDoc(doc(collection(db,'activityLog')), {
+      tenantId:currentTenantId, branchId:currentBranchId,
+      uid:authInst.currentUser.uid, actorName:currentUserData?.name||'—',
+      action, detail:detail||'', timestamp:serverTimestamp()
+    });
+  }catch(e){ console.warn('activity log write failed:', e.message); }
+}
+
+function showPanel(id,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(id==='panel-settings') loadSettingsForm();
+  if(id==='panel-expenses' && !document.getElementById('exp-date').value){
+    document.getElementById('exp-date').value=new Date().toISOString().slice(0,10);
+  }
+  if(id==='panel-reports'){
+    if(!document.getElementById('rep-from').value){
+      const today=new Date();
+      document.getElementById('rep-to').value=today.toISOString().slice(0,10);
+      document.getElementById('rep-from').value=new Date(today.getFullYear(),today.getMonth(),1).toISOString().slice(0,10);
+    }
+    loadActivityLog();
+  }
+}
+window.showPanel=showPanel;
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+window.closeModal=closeModal;
+
+// ── Open Session ──
+window.openSessionModal=function(idx){
+  // Same rule the local app enforces: no sale-generating action without
+  // an open shift, so revenue always has a shift to attribute to and
+  // reconcile against. Checked here (before the form even opens) so
+  // staff aren't stopped after already filling it out.
+  if(!currentShift){
+    alert('⚠ Open a shift first (Shifts tab) before opening a station.');
+    return;
+  }
+  activeStationIdx=idx;
+  selectedPkgIdx=0;
+  const s=currentBranchData.settings;
+  const name=s.stationNames?.[idx]||'Station '+(idx+1);
+  document.getElementById('open-modal-title').textContent='▶ Open — '+name;
+  document.getElementById('open-player').value='';
+  const pkgs=s.timePackages||[{label:'Open',mins:0}];
+  document.getElementById('open-pkg-row').innerHTML=pkgs.map((p,i)=>
+    `<div class="pkg-opt ${i===0?'sel':''}" data-i="${i}" onclick="selectPkg(this,${i})">${p.label}</div>`
+  ).join('');
+  document.getElementById('open-rate-display').textContent=fmtMoney(s.stationRates?.[idx]||s.defaultRate)+'/hr';
+  document.getElementById('modal-open').classList.add('active');
+};
+window.selectPkg=function(el,i){
+  selectedPkgIdx=i;
+  document.querySelectorAll('#open-pkg-row .pkg-opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+};
+window.confirmOpenSession=async function(){
+  if(!currentShift){ alert('⚠ No shift is open — cannot start a session.'); closeModal('modal-open'); return; }
+  const player=document.getElementById('open-player').value.trim()||'Guest';
+  const s=currentBranchData.settings;
+  const pkg=(s.timePackages||[{label:'Open',mins:0}])[selectedPkgIdx];
+  const idx=activeStationIdx;
+  try{
+    await setDoc(doc(collection(db,'sessions')),{
+      tenantId:currentTenantId, branchId:currentBranchId, status:'open',
+      stationIdx:idx, station:s.stationNames?.[idx]||'Station '+(idx+1),
+      deviceType:s.stationTypes?.[idx]||'PS5', player,
+      rate:s.stationRates?.[idx]||s.defaultRate,
+      packageMins:pkg.mins, packageLabel:pkg.label,
+      startTs:Date.now(), startedAt:serverTimestamp(),
+      openedBy:currentUserData.name,
+      shiftId:currentShift.id, shiftNumber:currentShift.shiftNumber
+    });
+    logActivity('session_open', (s.stationNames?.[idx]||'Station '+(idx+1))+' · '+player);
+    closeModal('modal-open');
+  }catch(e){
+    alert('Could not open station: '+e.message);
+  }
+};
+
+// ── Close Session ──
+window.closeSessionModal=function(idx){
+  const os=openSessions[idx];if(!os) return;
+  activeStationIdx=idx; activeSessionId=os.id;
+  const s=currentBranchData.settings;
+  const name=s.stationNames?.[idx]||'Station '+(idx+1);
+  document.getElementById('close-modal-title').textContent='■ Close — '+name;
+  const mins=Math.floor((Date.now()-os.startTs)/60000);
+  const calc=mins/60*os.rate;
+  document.getElementById('close-elapsed').textContent=fmtMins(mins)+' ('+os.player+')';
+  document.getElementById('close-calc').textContent=fmtMoney(calc);
+  document.getElementById('close-custom').value='';
+  document.getElementById('close-total').textContent=fmtMoney(calc);
+  selectedClosePayment='Cash';
+  document.querySelectorAll('#close-pay-row .pay-opt').forEach(o=>o.classList.toggle('sel',o.dataset.pay==='Cash'));
+  document.getElementById('close-custom').oninput=()=>{
+    const c=parseFloat(document.getElementById('close-custom').value);
+    document.getElementById('close-total').textContent=fmtMoney(c>0?c:calc);
+  };
+  document.getElementById('modal-close').classList.add('active');
+};
+window.selectClosePay=function(el){
+  selectedClosePayment=el.dataset.pay;
+  document.querySelectorAll('#close-pay-row .pay-opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+};
+window.confirmCloseSession=async function(){
+  const os=openSessions[activeStationIdx];if(!os) return;
+  const mins=Math.floor((Date.now()-os.startTs)/60000);
+  const calcGame=mins/60*os.rate;
+  const customVal=parseFloat(document.getElementById('close-custom').value);
+  const finalTotal=customVal>0?customVal:calcGame;
+  const adjustment=finalTotal-calcGame;
+  // Same "actual charge" fix as the local app: if there's a manual
+  // adjustment, Gaming Revenue reflects what was actually charged, not
+  // the raw calculated rate — avoids the exact bug that took several
+  // versions to fully fix in the local version.
+  const game=adjustment!==0?finalTotal:calcGame;
+  try{
+    await updateDoc(doc(db,'sessions',activeSessionId),{
+      status:'closed', endTs:Date.now(), endedAt:serverTimestamp(),
+      mins, game, calcGame, total:finalTotal, adjustment,
+      payment:selectedClosePayment, closedBy:currentUserData.name
+    });
+    logActivity('session_close', (os.station||'')+' · '+fmtMoney(finalTotal)+' · '+selectedClosePayment+(adjustment!==0?' (adjusted)':''));
+    closeModal('modal-close');
+  }catch(e){
+    alert('Could not close station: '+e.message+(e.code==='permission-denied'?' — you may not have permission to apply a discount/markup.':''));
+  }
+};
+
+// ═══════════ SHIFTS ═══════════
+function renderShiftPanel(){
+  const el=document.getElementById('shift-current-body');if(!el) return;
+  if(currentShift){
+    el.innerHTML=`
+      <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--green);margin-bottom:8px">● SHIFT #${currentShift.shiftNumber} OPEN — ${currentShift.staff}</div>
+      <div class="summary-row"><span>Started</span><span>${new Date(currentShift.startTs).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></div>
+      <div class="summary-row"><span>Starting Cash Float</span><span>${fmtMoney(currentShift.startingCash||0)}</span></div>
+      <button class="btn-p" onclick="openCloseShiftModal()" style="margin-top:10px">■ Close Shift</button>
+    `;
+  }else{
+    el.innerHTML=`
+      <p style="font-size:11px;color:var(--mut);margin-bottom:10px">No active shift. Open one before taking any orders.</p>
+      <label>Staff Name</label>
+      <input type="text" id="os-staff" value="${currentUserData?.name||''}" readonly style="opacity:.75;cursor:not-allowed">
+      <label>Starting Cash Float</label>
+      <input type="number" id="os-float" value="0" step="0.01" min="0" placeholder="Cash in drawer at start">
+      <button class="btn-g" onclick="confirmOpenShift()" style="margin-top:6px">▶ Open Shift</button>
+    `;
+  }
+}
+
+window.confirmOpenShift=async function(){
+  if(currentShift){ alert('A shift is already open.'); return; }
+  const floatAmt=parseFloat(document.getElementById('os-float').value)||0;
+  try{
+    // Atomic, collision-free shift numbering — a real transaction, unlike
+    // the local app's best-effort counter (this is exactly the kind of
+    // thing a real database does properly that localStorage never could).
+    const branchRef=doc(db,'branches',currentBranchId);
+    let openedShiftNumber=null;
+    await runTransaction(db, async (tx)=>{
+      const branchSnap=await tx.get(branchRef);
+      const nextNum=(branchSnap.data().nextShiftNumber)||1;
+      tx.update(branchRef, {nextShiftNumber: nextNum+1});
+      const shiftRef=doc(collection(db,'shifts'));
+      tx.set(shiftRef, {
+        tenantId:currentTenantId, branchId:currentBranchId, status:'open',
+        shiftNumber:nextNum, staff:currentUserData.name,
+        startTs:Date.now(), startedAt:serverTimestamp(), startingCash:floatAmt
+      });
+      openedShiftNumber=nextNum;
+    });
+    logActivity('shift_open', '#'+openedShiftNumber+' · float '+fmtMoney(floatAmt));
+  }catch(e){
+    alert('Could not open shift: '+e.message);
+  }
+};
+
+window.openCloseShiftModal=async function(){
+  if(!currentShift) return;
+  document.getElementById('sc-float').textContent=fmtMoney(currentShift.startingCash||0);
+  document.getElementById('sc-cashsales').textContent='Calculating…';
+  document.getElementById('sc-expected').textContent='—';
+  document.getElementById('sc-actual').value='';
+  document.getElementById('modal-shift-close').classList.add('active');
+  // Cash sales during this shift — direct shiftId query, no time-window
+  // guessing needed (the local app's version has to reconstruct this
+  // from timestamps; here it's just stored).
+  const q=query(collection(db,'sessions'), where('shiftId','==',currentShift.id), where('payment','==','Cash'));
+  const snap=await getDocs(q);
+  let cashTotal=0;
+  snap.forEach(d=>{ cashTotal+=d.data().total||0; });
+  const expected=(currentShift.startingCash||0)+cashTotal;
+  document.getElementById('sc-cashsales').textContent=fmtMoney(cashTotal);
+  document.getElementById('sc-expected').textContent=fmtMoney(expected);
+  document.getElementById('modal-shift-close').dataset.expected=expected;
+};
+
+window.confirmCloseShift=async function(){
+  if(!currentShift) return;
+  const actualInput=document.getElementById('sc-actual').value;
+  const actual=parseFloat(actualInput);
+  if(actualInput===''||isNaN(actual)){ alert('⚠ Enter the actual cash counted before closing'); return; }
+  const expected=parseFloat(document.getElementById('modal-shift-close').dataset.expected)||0;
+  const variance=actual-expected;
+  try{
+    await updateDoc(doc(db,'shifts',currentShift.id),{
+      status:'closed', endTs:Date.now(), endedAt:serverTimestamp(),
+      expectedCash:expected, actualCashCounted:actual, cashVariance:variance
+    });
+    logActivity('shift_close', '#'+currentShift.shiftNumber+' · variance '+fmtMoney(variance));
+    closeModal('modal-shift-close');
+  }catch(e){
+    alert('Could not close shift: '+e.message);
+  }
+};
+
+async function renderShiftHistory(){
+  const el=document.getElementById('shift-history-body');if(!el||!currentBranchId) return;
+  const q=query(collection(db,'shifts'), where('branchId','==',currentBranchId), where('status','==','closed'));
+  const snap=await getDocs(q);
+  const shifts=[];
+  snap.forEach(d=>shifts.push({id:d.id,...d.data()}));
+  shifts.sort((a,b)=>(b.shiftNumber||0)-(a.shiftNumber||0));
+  const recent=shifts.slice(0,10);
+  if(!recent.length){ el.innerHTML='No closed shifts yet.'; return; }
+  el.innerHTML=recent.map(s=>{
+    const matched=Math.abs(s.cashVariance||0)<0.01;
+    const vClass=matched?'var(--green)':(s.cashVariance<0?'var(--red)':'var(--orange)');
+    const vText=matched?'✓ Matched':((s.cashVariance<0?'SHORT ':'OVER ')+fmtMoney(Math.abs(s.cashVariance)));
+    return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdr)">
+      <span>Shift #${s.shiftNumber} — ${s.staff}</span>
+      <span style="color:${vClass};font-weight:700">${vText}</span>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════ INVENTORY ═══════════
+// Client-side mirror of the permission logic already enforced server-
+// side in firestore.rules — used only to decide what to SHOW, never as
+// the actual security boundary. A user without this permission would
+// still be rejected by Firestore even if they got a button to show.
+function myHasPerm(key){
+  if(!currentUserData) return false;
+  if(currentUserData.role==='owner'||currentUserData.role==='superadmin') return true;
+  return currentUserData.permissions?.[key]===true;
+}
+
+function renderInventoryList(){
+  const el=document.getElementById('inventory-list');if(!el) return;
+  const canManage=myHasPerm('manage_inventory_items');
+  document.getElementById('inv-add-btn').style.display=canManage?'block':'none';
+  const search=(document.getElementById('inv-search')?.value||'').toLowerCase().trim();
+  const hideOOS=document.getElementById('inv-hide-oos')?.checked;
+  let items=inventoryItems;
+  if(search) items=items.filter(it=>it.name.toLowerCase().includes(search));
+  if(hideOOS) items=items.filter(it=>it.stock>0);
+  if(!items.length){
+    el.innerHTML=`<div style="color:var(--mut);font-size:11px;text-align:center;padding:16px">${inventoryItems.length?'No items match.':'No items yet — add your first one.'}</div>`;
+    return;
+  }
+  el.innerHTML=items.map(it=>{
+    const low=it.stock<=(it.lowAlert??5);
+    const out=it.stock<=0;
+    const stockColor=out?'var(--red)':(low?'var(--orange)':'var(--green)');
+    return `<div class="inv-row">
+      <div class="inv-icon">${it.icon||'📦'}</div>
+      <div style="flex:1">
+        <div class="inv-name">${it.name}</div>
+        <div class="inv-meta">${it.cat} · Sale ${fmtMoney(it.price)} · Cost ${fmtMoney(it.cost)}</div>
+      </div>
+      <div class="inv-stock" style="color:${stockColor}">${it.stock}${out?' ❌':(low?' ⚠':'')}</div>
+      <div class="inv-actions">
+        <button class="icon-btn" onclick="openStockHistory('${it.id}')" title="Stock history">📜</button>
+        ${canManage?`<button class="icon-btn" onclick="openItemModal('${it.id}')">Edit</button>
+        <button class="icon-btn danger" onclick="deleteItem('${it.id}')">✕</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+// Exposed to window: called from an inline oninput/onchange attribute,
+// which runs in global scope — a plain module-scoped function
+// declaration is invisible there and would silently no-op (this exact
+// gap existed here and on the two functions below until this pass).
+window.renderInventoryList = renderInventoryList;
+
+window.openItemModal=function(itemId){
+  editingItemId=itemId;
+  if(itemId){
+    const it=inventoryItems.find(x=>x.id===itemId);if(!it) return;
+    document.getElementById('item-modal-title').textContent='Edit — '+it.name;
+    document.getElementById('it-icon').value=it.icon||'';
+    document.getElementById('it-name').value=it.name;
+    document.getElementById('it-cat').value=it.cat;
+    document.getElementById('it-price').value=it.price;
+    document.getElementById('it-cost').value=it.cost;
+    document.getElementById('it-stock').value=it.stock;
+    document.getElementById('it-low').value=it.lowAlert??5;
+  }else{
+    document.getElementById('item-modal-title').textContent='＋ Add Item';
+    ['it-icon','it-name','it-price','it-cost','it-stock'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('it-cat').value='drink';
+    document.getElementById('it-low').value=5;
+  }
+  document.getElementById('modal-item').classList.add('active');
+};
+
+window.saveItem=async function(){
+  const name=document.getElementById('it-name').value.trim();
+  if(!name){ alert('⚠ Enter a name'); return; }
+  const data={
+    tenantId:currentTenantId, branchId:currentBranchId,
+    icon:document.getElementById('it-icon').value.trim()||'📦',
+    name, cat:document.getElementById('it-cat').value,
+    price:parseFloat(document.getElementById('it-price').value)||0,
+    cost:parseFloat(document.getElementById('it-cost').value)||0,
+    stock:parseInt(document.getElementById('it-stock').value)||0,
+    lowAlert:parseInt(document.getElementById('it-low').value)||5,
+    recipe:[] // recipe-based items aren't ported yet — every item here is a plain stock item
+  };
+  try{
+    const batch=writeBatch(db);
+    if(editingItemId){
+      const prevStock=inventoryItems.find(x=>x.id===editingItemId)?.stock ?? 0;
+      batch.update(doc(db,'inventory',editingItemId), data);
+      // A manual correction from this form (recount, damage, etc.) is a
+      // real stock event too — log it as 'adjustment' so it shows up in
+      // this item's history same as a sale or a purchase would.
+      queueStockMovement(batch, editingItemId, data.stock-prevStock, 'adjustment', editingItemId);
+      await batch.commit();
+      logActivity('inventory_item_edited', name);
+    }else{
+      const newRef=doc(collection(db,'inventory'));
+      batch.set(newRef, data);
+      queueStockMovement(batch, newRef.id, data.stock, 'adjustment', newRef.id);
+      await batch.commit();
+      logActivity('inventory_item_added', name);
+    }
+    closeModal('modal-item');
+  }catch(e){
+    alert('Could not save item: '+e.message+(e.code==='permission-denied'?' — you may not have permission to manage inventory.':''));
+  }
+};
+
+window.deleteItem=async function(itemId){
+  const it=inventoryItems.find(x=>x.id===itemId);if(!it) return;
+  if(!confirm('Delete "'+it.name+'"?')) return;
+  try{
+    await deleteDoc(doc(db,'inventory',itemId));
+    logActivity('inventory_item_deleted', it.name);
+  }catch(e){
+    alert('Could not delete item: '+e.message+(e.code==='permission-denied'?' — you may not have permission to manage inventory.':''));
+  }
+};
+
+// ═══════════ SNACKS / CHECKOUT ═══════════
+window.setSnackFilter=function(cat,btn){
+  snackFilter=cat;
+  document.querySelectorAll('#snack-filter-bar .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSnackMenu();
+};
+
+function renderSnackMenu(){
+  const el=document.getElementById('snack-menu');if(!el) return;
+  const search=(document.getElementById('snack-search')?.value||'').toLowerCase().trim();
+  const hideOOS=document.getElementById('snack-hide-oos')?.checked;
+  let items=inventoryItems.filter(it=>it.cat!=='other');
+  if(snackFilter!=='all') items=items.filter(it=>it.cat===snackFilter);
+  if(search) items=items.filter(it=>it.name.toLowerCase().includes(search));
+  if(hideOOS) items=items.filter(it=>it.stock>0);
+  if(!items.length){
+    el.innerHTML='<div style="color:var(--mut);font-size:11px;grid-column:1/-1;text-align:center;padding:14px">No items match.</div>';
+    return;
+  }
+  el.innerHTML=items.map(it=>{
+    const oos=it.stock<=0;
+    const qty=cart[it.id]||0;
+    return `<div class="menu-item ${oos?'oos':''} ${qty>0?'sel':''}" onclick="${oos?'':'addToCart(\''+it.id+'\')'}">
+      ${qty>0?`<div class="mi-qty">×${qty}</div>`:''}
+      <div class="mi-icon">${it.icon||'📦'}</div>
+      <div class="mi-name">${it.name}</div>
+      <div class="mi-price">${fmtMoney(it.price)}</div>
+    </div>`;
+  }).join('');
+}
+window.renderSnackMenu = renderSnackMenu;
+
+window.addToCart=function(itemId){
+  const it=inventoryItems.find(x=>x.id===itemId);if(!it) return;
+  const current=cart[itemId]||0;
+  if(current+1>it.stock){ alert('⚠ Only '+it.stock+' in stock'); return; }
+  cart[itemId]=current+1;
+  renderSnackMenu();
+  renderCart();
+};
+window.adjustCartQty=function(itemId,delta){
+  const it=inventoryItems.find(x=>x.id===itemId);if(!it) return;
+  const newQty=(cart[itemId]||0)+delta;
+  if(newQty<=0){ delete cart[itemId]; }
+  else if(newQty>it.stock){ alert('⚠ Only '+it.stock+' in stock'); return; }
+  else{ cart[itemId]=newQty; }
+  renderSnackMenu();
+  renderCart();
+};
+window.clearCart=function(){ cart={}; renderSnackMenu(); renderCart(); };
+
+function cartTotal(){
+  return Object.entries(cart).reduce((sum,[id,qty])=>{
+    const it=inventoryItems.find(x=>x.id===id);
+    return sum+(it?it.price*qty:0);
+  },0);
+}
+
+function renderCart(){
+  const cardEl=document.getElementById('cart-card');
+  const rowsEl=document.getElementById('cart-rows');
+  const keys=Object.keys(cart);
+  if(!keys.length){ cardEl.style.display='none'; return; }
+  cardEl.style.display='block';
+  rowsEl.innerHTML=keys.map(id=>{
+    const it=inventoryItems.find(x=>x.id===id);if(!it) return '';
+    const qty=cart[id];
+    return `<div class="cart-row">
+      <span>${it.icon||'📦'} ${it.name}</span>
+      <div class="cart-qty-btns">
+        <button class="qty-btn" onclick="adjustCartQty('${id}',-1)">−</button>
+        <span>${qty}</span>
+        <button class="qty-btn" onclick="adjustCartQty('${id}',1)">+</button>
+        <span style="min-width:56px;text-align:right;color:var(--green)">${fmtMoney(it.price*qty)}</span>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('cart-total').textContent=fmtMoney(cartTotal());
+}
+
+window.openCheckoutModal=function(){
+  if(!currentShift){ alert('⚠ Open a shift first (Shifts tab) before taking orders.'); return; }
+  if(!Object.keys(cart).length){ alert('⚠ Cart is empty'); return; }
+  document.getElementById('checkout-total').textContent=fmtMoney(cartTotal());
+  selectedCheckoutPay='Cash';
+  document.querySelectorAll('#checkout-pay-row .pay-opt').forEach(o=>o.classList.toggle('sel',o.dataset.pay==='Cash'));
+  document.getElementById('modal-checkout').classList.add('active');
+};
+let selectedCheckoutPay='Cash';
+window.selectCheckoutPay=function(el){
+  selectedCheckoutPay=el.dataset.pay;
+  document.querySelectorAll('#checkout-pay-row .pay-opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+};
+
+window.confirmCheckout=async function(){
+  if(!currentShift){ alert('⚠ No shift is open.'); closeModal('modal-checkout'); return; }
+  const entries=Object.entries(cart);
+  if(!entries.length) return;
+  // Re-validate stock right before committing — the menu could be
+  // slightly stale if another device sold the last unit in the
+  // meantime. The batch write below is still the real safety net
+  // (atomic across every item + the order record together), this is
+  // just a friendlier upfront check.
+  for(const [id,qty] of entries){
+    const it=inventoryItems.find(x=>x.id===id);
+    if(!it||it.stock<qty){ alert('⚠ "'+(it?.name||id)+'" no longer has enough stock — please adjust the cart.'); return; }
+  }
+  const items=entries.map(([id,qty])=>{
+    const it=inventoryItems.find(x=>x.id===id);
+    return {id, name:it.name, icon:it.icon, qty, price:it.price, total:it.price*qty};
+  });
+  const total=items.reduce((s,x)=>s+x.total,0);
+  try{
+    // Atomic: every stock deduction AND the order record commit together,
+    // or none of them do. This is exactly the class of bug (partial
+    // stock deduction on a failed order) that took multiple releases to
+    // fully stamp out in the local app — a real database transaction
+    // closes that gap structurally instead of relying on careful
+    // sequencing of separate calls.
+    const batch=writeBatch(db);
+    const orderRef=doc(collection(db,'snackOrders'));
+    items.forEach(x=>{
+      // FIX: increment(-qty) is applied atomically by Firestore itself,
+      // server-side. Computing "currentStock - qty" from the client's
+      // locally-cached value and writing that instead would be unsafe —
+      // if two devices check out the same item at nearly the same
+      // moment, both would read the same stale stock number and the
+      // second write would silently overwrite the first deduction
+      // (a lost update), overstating real stock. increment() can't do
+      // that; Firestore applies both deductions correctly regardless of
+      // what either client had cached.
+      batch.update(doc(db,'inventory',x.id), {stock: increment(-x.qty)});
+      queueStockMovement(batch, x.id, -x.qty, 'sale', orderRef.id);
+    });
+    batch.set(orderRef, {
+      tenantId:currentTenantId, branchId:currentBranchId, shiftId:currentShift.id,
+      items, total, payment:selectedCheckoutPay, isTab:false,
+      date:new Date().toISOString().slice(0,10), createdAt:serverTimestamp(),
+      createdBy:currentUserData.name
+    });
+    await batch.commit();
+    logActivity('snack_order', fmtMoney(total)+' · '+selectedCheckoutPay+' · '+items.length+' item'+(items.length===1?'':'s'));
+    cart={};
+    renderSnackMenu();
+    renderCart();
+    closeModal('modal-checkout');
+  }catch(e){
+    alert('Could not complete checkout: '+e.message);
+  }
+};
+
+// ═══════════ CLIENT TABS ═══════════
+function renderTabsList(){
+  const el=document.getElementById('tabs-list'); if(!el) return;
+  if(!openTabs.length){
+    el.innerHTML='<div style="color:var(--mut);font-size:11px">No open tabs.</div>';
+    return;
+  }
+  el.innerHTML=openTabs.map(t=>{
+    const itemCount=Object.values(t.items||{}).reduce((s,it)=>s+(it.qty||0),0);
+    return `<div class="inv-row" style="cursor:pointer" onclick="openTabModal('${t.id}')">
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:12px">${t.name}${t.stationName?' · '+t.stationName:''}</div>
+        <div style="font-size:10px;color:var(--mut)">${itemCount} item${itemCount===1?'':'s'}</div>
+      </div>
+      <div style="font-family:'Orbitron',sans-serif;color:var(--green);font-weight:700">${fmtMoney(t.total||0)}</div>
+    </div>`;
+  }).join('');
+}
+
+window.openNewTab=async function(){
+  if(!currentShift){ alert('⚠ Open a shift first (Shifts tab) before opening a tab.'); return; }
+  const name=document.getElementById('newtab-name').value.trim();
+  if(!name){ alert('⚠ Enter a customer / tab name.'); return; }
+  const stationName=document.getElementById('newtab-station').value.trim();
+  try{
+    const ref=doc(collection(db,'clientTabs'));
+    await setDoc(ref,{
+      tenantId:currentTenantId, branchId:currentBranchId, shiftId:currentShift.id,
+      name, stationName, items:{}, total:0, status:'open',
+      openTs:serverTimestamp(), createdBy:currentUserData.name
+    });
+    document.getElementById('newtab-name').value='';
+    document.getElementById('newtab-station').value='';
+    logActivity('tab_open', name+(stationName?' · '+stationName:''));
+    openTabModal(ref.id);
+  }catch(e){ alert('Could not open tab: '+e.message); }
+};
+
+window.openTabModal=function(tabId){
+  activeTabId=tabId;
+  const t=openTabs.find(x=>x.id===tabId);
+  if(!t){ alert('Tab not found (it may have just been closed elsewhere).'); return; }
+  document.getElementById('tab-modal-title').textContent='🧾 '+t.name+(t.stationName?' · '+t.stationName:'');
+  document.getElementById('tab-void-btn').style.display=myHasPerm('void_transaction')?'block':'none';
+  tabFilter='all';
+  document.querySelectorAll('#tab-filter-bar .filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.cat==='all'));
+  document.getElementById('tab-search').value='';
+  renderTabMenu();
+  renderTabItemsRows();
+  document.getElementById('modal-tab').classList.add('active');
+};
+
+window.setTabFilter=function(cat,btn){
+  tabFilter=cat;
+  document.querySelectorAll('#tab-filter-bar .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTabMenu();
+};
+
+function renderTabMenu(){
+  const el=document.getElementById('tab-menu'); if(!el||!activeTabId) return;
+  const search=(document.getElementById('tab-search')?.value||'').toLowerCase().trim();
+  let items=inventoryItems.filter(it=>it.cat!=='other');
+  if(tabFilter!=='all') items=items.filter(it=>it.cat===tabFilter);
+  if(search) items=items.filter(it=>it.name.toLowerCase().includes(search));
+  if(!items.length){
+    el.innerHTML='<div style="color:var(--mut);font-size:11px;grid-column:1/-1;text-align:center;padding:14px">No items match.</div>';
+    return;
+  }
+  const t=openTabs.find(x=>x.id===activeTabId);
+  el.innerHTML=items.map(it=>{
+    const oos=it.stock<=0;
+    const onTab=t?.items?.[it.id]?.qty||0;
+    return `<div class="menu-item ${oos?'oos':''} ${onTab>0?'sel':''}" onclick="${oos?'':'addItemToTab(\''+it.id+'\')'}">
+      ${onTab>0?`<div class="mi-qty">×${onTab}</div>`:''}
+      <div class="mi-icon">${it.icon||'📦'}</div>
+      <div class="mi-name">${it.name}</div>
+      <div class="mi-price">${fmtMoney(it.price)}</div>
+    </div>`;
+  }).join('');
+}
+window.renderTabMenu = renderTabMenu;
+
+function renderTabItemsRows(){
+  const el=document.getElementById('tab-items-rows'); if(!el||!activeTabId) return;
+  const t=openTabs.find(x=>x.id===activeTabId);
+  if(!t){ el.innerHTML=''; return; }
+  const entries=Object.entries(t.items||{});
+  if(!entries.length){
+    el.innerHTML='<div style="color:var(--mut);font-size:11px">No items added yet.</div>';
+  }else{
+    el.innerHTML=entries.map(([id,it])=>`<div class="cart-row">
+      <span>${it.icon||'📦'} ${it.name}</span>
+      <div class="cart-qty-btns">
+        <button class="qty-btn" onclick="adjustTabItemQty('${id}',-1)">−</button>
+        <span>${it.qty}</span>
+        <button class="qty-btn" onclick="adjustTabItemQty('${id}',1)">+</button>
+        <span style="min-width:56px;text-align:right;color:var(--green)">${fmtMoney(it.price*it.qty)}</span>
+      </div>
+    </div>`).join('');
+  }
+  document.getElementById('tab-modal-total').textContent=fmtMoney(t.total||0);
+}
+
+// Adding an item to a tab deducts its stock IMMEDIATELY (matches how the
+// local app always worked for tabs — the drink leaves the fridge when
+// it's handed over, not when the tab is eventually paid). Both writes
+// (stock + tab) commit atomically in one batch, same reasoning as
+// checkout: no partial state if the write fails partway.
+window.addItemToTab=async function(itemId){
+  if(!activeTabId) return;
+  const it=inventoryItems.find(x=>x.id===itemId); if(!it) return;
+  if(it.stock<=0){ alert('⚠ Out of stock'); return; }
+  try{
+    const batch=writeBatch(db);
+    batch.update(doc(db,'inventory',itemId), {stock: increment(-1)});
+    queueStockMovement(batch, itemId, -1, 'sale', activeTabId);
+    batch.update(doc(db,'clientTabs',activeTabId), {
+      [`items.${itemId}.name`]: it.name,
+      [`items.${itemId}.icon`]: it.icon||'📦',
+      [`items.${itemId}.price`]: it.price,
+      [`items.${itemId}.qty`]: increment(1),
+      total: increment(it.price)
+    });
+    await batch.commit();
+  }catch(e){ alert('Could not add item: '+e.message); }
+};
+
+window.adjustTabItemQty=async function(itemId, delta){
+  if(!activeTabId) return;
+  const t=openTabs.find(x=>x.id===activeTabId); if(!t) return;
+  const current=t.items?.[itemId]; if(!current) return;
+  const newQty=current.qty+delta;
+  if(delta>0){
+    const it=inventoryItems.find(x=>x.id===itemId);
+    if(it && it.stock<=0){ alert('⚠ Out of stock'); return; }
+  }
+  try{
+    const batch=writeBatch(db);
+    batch.update(doc(db,'inventory',itemId), {stock: increment(-delta)});
+    queueStockMovement(batch, itemId, -delta, 'sale', activeTabId);
+    if(newQty<=0){
+      batch.update(doc(db,'clientTabs',activeTabId), {
+        [`items.${itemId}`]: deleteField(),
+        total: increment(-current.price*current.qty)
+      });
+    }else{
+      batch.update(doc(db,'clientTabs',activeTabId), {
+        [`items.${itemId}.qty`]: increment(delta),
+        total: increment(current.price*delta)
+      });
+    }
+    await batch.commit();
+  }catch(e){ alert('Could not update item: '+e.message); }
+};
+
+window.openCloseTabModal=function(){
+  const t=openTabs.find(x=>x.id===activeTabId);
+  if(!t||!Object.keys(t.items||{}).length){ alert('⚠ This tab has no items yet.'); return; }
+  document.getElementById('tab-close-total').textContent=fmtMoney(t.total||0);
+  selectedTabClosePay='Cash';
+  document.querySelectorAll('#tab-close-pay-row .pay-opt').forEach(o=>o.classList.toggle('sel',o.dataset.pay==='Cash'));
+  document.getElementById('modal-tab-close').classList.add('active');
+};
+window.selectTabClosePay=function(el){
+  selectedTabClosePay=el.dataset.pay;
+  document.querySelectorAll('#tab-close-pay-row .pay-opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+};
+
+window.confirmCloseTab=async function(){
+  const t=openTabs.find(x=>x.id===activeTabId);
+  if(!t) return;
+  try{
+    const batch=writeBatch(db);
+    // Stock for a tab's items was already deducted item-by-item as they
+    // were added — closing the tab just settles payment, it does not
+    // touch stock again.
+    batch.update(doc(db,'clientTabs',activeTabId), {
+      status: selectedTabClosePay==='Waived' ? 'waived' : 'closed',
+      payment: selectedTabClosePay,
+      closedTs: serverTimestamp(),
+      closedBy: currentUserData.name
+    });
+    // Mirror the tab into snackOrders too, same as the local app, so it
+    // shows up alongside walk-up orders in sales/order history and
+    // reporting later — isTab:true is what future reports/undo logic use
+    // to tell them apart (a tab's stock was already handled above, not
+    // at "checkout" time).
+    batch.set(doc(collection(db,'snackOrders')), {
+      tenantId:currentTenantId, branchId:currentBranchId, shiftId:t.shiftId||currentShift?.id||null,
+      items:Object.values(t.items||{}), total:t.total||0, payment:selectedTabClosePay, isTab:true,
+      tabId:activeTabId, tabName:t.name,
+      date:new Date().toISOString().slice(0,10), createdAt:serverTimestamp(),
+      createdBy:currentUserData.name
+    });
+    await batch.commit();
+    logActivity('tab_close', t.name+' · '+fmtMoney(t.total||0)+' · '+selectedTabClosePay);
+    closeModal('modal-tab-close');
+    closeModal('modal-tab');
+    activeTabId=null;
+  }catch(e){ alert('Could not close tab: '+e.message); }
+};
+
+// Voiding an open tab restores every item's stock (same fix the local
+// app needed for deleteOpenTab — a voided tab must not leave stock
+// silently short) then deletes the tab. Requires void_transaction,
+// same as voiding a session or a snack order.
+window.voidTab=async function(){
+  if(!myHasPerm('void_transaction')){ alert('⚠ You do not have permission to void tabs.'); return; }
+  const t=openTabs.find(x=>x.id===activeTabId); if(!t) return;
+  if(!confirm('Void this tab? All items will be removed and their stock restored.')) return;
+  try{
+    const batch=writeBatch(db);
+    Object.entries(t.items||{}).forEach(([id,it])=>{
+      batch.update(doc(db,'inventory',id), {stock: increment(it.qty)});
+      queueStockMovement(batch, id, it.qty, 'adjustment', activeTabId);
+    });
+    batch.delete(doc(db,'clientTabs',activeTabId));
+    await batch.commit();
+    logActivity('tab_void', t.name+' · stock restored');
+    closeModal('modal-tab');
+    activeTabId=null;
+  }catch(e){ alert('Could not void tab: '+e.message); }
+};
+
+// ═══════════ PURCHASES / RESTOCKING ═══════════
+function renderPurchasePicker(){
+  const el=document.getElementById('purchase-picker'); if(!el) return;
+  const search=(document.getElementById('pur-search')?.value||'').toLowerCase().trim();
+  let items=inventoryItems;
+  if(search) items=items.filter(it=>it.name.toLowerCase().includes(search));
+  if(!items.length){
+    el.innerHTML='<div style="color:var(--mut);font-size:11px;grid-column:1/-1;text-align:center;padding:14px">No items match.</div>';
+    return;
+  }
+  el.innerHTML=items.map(it=>{
+    const inCart=purchaseCart[it.id];
+    return `<div class="menu-item ${inCart?'sel':''}" onclick="addToPurchase('${it.id}')">
+      ${inCart?`<div class="mi-qty">×${inCart.qty}</div>`:''}
+      <div class="mi-icon">${it.icon||'📦'}</div>
+      <div class="mi-name">${it.name}</div>
+      <div class="mi-price" style="color:var(--mut)">stock: ${it.stock}</div>
+    </div>`;
+  }).join('');
+}
+window.renderPurchasePicker = renderPurchasePicker;
+
+window.addToPurchase=function(itemId){
+  const it=inventoryItems.find(x=>x.id===itemId); if(!it) return;
+  if(purchaseCart[itemId]) purchaseCart[itemId].qty+=1;
+  // Default the unit cost to what's already on file for this item —
+  // the person recording the delivery just edits it if the price
+  // changed this time, instead of typing it from scratch every time.
+  else purchaseCart[itemId]={qty:1, unitCost:Number(it.cost)||0, name:it.name, icon:it.icon};
+  renderPurchasePicker();
+  renderPurchaseCartRows();
+};
+window.adjustPurchaseQty=function(itemId, delta){
+  const row=purchaseCart[itemId]; if(!row) return;
+  row.qty+=delta;
+  if(row.qty<=0) delete purchaseCart[itemId];
+  renderPurchasePicker();
+  renderPurchaseCartRows();
+};
+window.setPurchaseCost=function(itemId, val){
+  const row=purchaseCart[itemId]; if(!row) return;
+  row.unitCost=Math.max(0, Number(val)||0);
+  renderPurchaseCartRows();
+};
+window.clearPurchaseCart=function(){
+  purchaseCart={};
+  document.getElementById('pur-vendor').value='';
+  renderPurchasePicker();
+  renderPurchaseCartRows();
+};
+
+function purchaseTotal(){
+  return Object.values(purchaseCart).reduce((s,r)=>s+r.qty*r.unitCost,0);
+}
+
+function renderPurchaseCartRows(){
+  const el=document.getElementById('purchase-cart-rows'); if(!el) return;
+  const entries=Object.entries(purchaseCart);
+  if(!entries.length){
+    el.innerHTML='<div style="color:var(--mut);font-size:11px">No items added yet.</div>';
+  }else{
+    el.innerHTML=entries.map(([id,row])=>`<div class="cart-row">
+      <span>${row.icon||'📦'} ${row.name}</span>
+      <div class="cart-qty-btns">
+        <button class="qty-btn" onclick="adjustPurchaseQty('${id}',-1)">−</button>
+        <span>${row.qty}</span>
+        <button class="qty-btn" onclick="adjustPurchaseQty('${id}',1)">+</button>
+        <input class="cost-input" type="number" step="0.01" min="0" value="${row.unitCost}" onchange="setPurchaseCost('${id}',this.value)">
+        <span style="min-width:56px;text-align:right;color:var(--green)">${fmtMoney(row.qty*row.unitCost)}</span>
+      </div>
+    </div>`).join('');
+  }
+  document.getElementById('purchase-total').textContent=fmtMoney(purchaseTotal());
+}
+
+window.confirmPurchase=async function(){
+  const vendor=document.getElementById('pur-vendor').value.trim();
+  const entries=Object.entries(purchaseCart);
+  if(!entries.length){ alert('⚠ Add at least one item.'); return; }
+  if(!vendor){ alert('⚠ Enter a vendor / supplier name.'); return; }
+  const items=entries.map(([id,row])=>({id, name:row.name, icon:row.icon, qty:row.qty, unitCost:row.unitCost, total:row.qty*row.unitCost}));
+  const total=items.reduce((s,x)=>s+x.total,0);
+  try{
+    const batch=writeBatch(db);
+    const purchaseRef=doc(collection(db,'purchases'));
+    // Each line only touches 'stock' on its inventory doc, which is the
+    // one field any signed-in branch member is always allowed to change
+    // (see firestore.rules) — receiving a delivery is routine work, not
+    // a privileged edit, so this doesn't need manage_inventory_items.
+    items.forEach(x=>{
+      batch.update(doc(db,'inventory',x.id), {stock: increment(x.qty)});
+      queueStockMovement(batch, x.id, x.qty, 'purchase', purchaseRef.id);
+    });
+    batch.set(purchaseRef, {
+      tenantId:currentTenantId, branchId:currentBranchId, vendor, items, total,
+      date:new Date().toISOString().slice(0,10), createdAt:serverTimestamp(),
+      createdBy:currentUserData.name
+    });
+    await batch.commit();
+    logActivity('purchase_recorded', vendor+' · '+fmtMoney(total)+' · '+items.length+' item'+(items.length===1?'':'s'));
+    clearPurchaseCart();
+  }catch(e){ alert('Could not save purchase: '+e.message); }
+};
+
+function renderPurchaseHistory(){
+  const el=document.getElementById('purchase-history-body'); if(!el) return;
+  if(!purchaseHistory.length){ el.innerHTML='No purchases recorded yet.'; return; }
+  el.innerHTML=purchaseHistory.slice(0,10).map(p=>{
+    const itemCount=(p.items||[]).reduce((s,x)=>s+x.qty,0);
+    return `<div class="inv-row">
+      <div style="flex:1">
+        <div style="font-weight:700;color:var(--txt)">${p.vendor||'—'} <span style="color:var(--mut);font-weight:400">· ${p.date}</span></div>
+        <div style="font-size:10px">${itemCount} unit${itemCount===1?'':'s'} · ${(p.items||[]).map(x=>x.name).join(', ')}</div>
+      </div>
+      <div style="font-family:'Orbitron',sans-serif;color:var(--green);font-weight:700">${fmtMoney(p.total||0)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════ EXPENSES ═══════════
+window.confirmExpense=async function(){
+  const desc=document.getElementById('exp-desc').value.trim();
+  const cat=document.getElementById('exp-cat').value;
+  const amount=Number(document.getElementById('exp-amount').value);
+  const date=document.getElementById('exp-date').value || new Date().toISOString().slice(0,10);
+  if(!desc){ alert('⚠ Enter a description.'); return; }
+  if(!amount || amount<=0){ alert('⚠ Enter a valid amount.'); return; }
+  try{
+    await setDoc(doc(collection(db,'expenses')), {
+      tenantId:currentTenantId, branchId:currentBranchId,
+      desc, cat, amount, date, createdAt:serverTimestamp(), createdBy:currentUserData.name
+    });
+    logActivity('expense_logged', desc+' · '+fmtMoney(amount)+' · '+EXP_CAT_LABELS[cat]);
+    document.getElementById('exp-desc').value='';
+    document.getElementById('exp-amount').value='';
+  }catch(e){ alert('Could not save expense: '+e.message); }
+};
+
+function renderExpenseHistory(){
+  const el=document.getElementById('expense-history-body'); if(!el) return;
+  if(!expenseHistory.length){ el.innerHTML='No expenses logged yet.'; document.getElementById('exp-month-total').textContent=''; return; }
+  const thisMonth=new Date().toISOString().slice(0,7); // YYYY-MM
+  const monthTotal=expenseHistory.filter(e=>(e.date||'').startsWith(thisMonth)).reduce((s,e)=>s+(e.amount||0),0);
+  document.getElementById('exp-month-total').textContent='This month: '+fmtMoney(monthTotal);
+  el.innerHTML=expenseHistory.slice(0,15).map(e=>`<div class="inv-row">
+    <div style="flex:1">
+      <div style="font-weight:700;color:var(--txt)">${e.desc} <span style="color:var(--mut);font-weight:400">· ${EXP_CAT_LABELS[e.cat]||e.cat} · ${e.date}</span></div>
+    </div>
+    <div style="font-family:'Orbitron',sans-serif;color:var(--red);font-weight:700">-${fmtMoney(e.amount||0)}</div>
+  </div>`).join('');
+}
+
+// ═══════════ REPORTS ═══════════
+// One-shot getDocs() reads on demand, not live onSnapshot listeners —
+// this is historical data the person is choosing to pull up, not
+// something that needs to update itself in real time, and keeping it
+// out of the always-on listener set is one less thing running per
+// device per session on the free plan. Every query here filters ONLY
+// on branchId (an equality match), with the date range applied
+// client-side — that deliberately avoids needing a manual composite
+// index in Firestore. The trade-off: as history grows this reads more
+// documents than a server-side range filter would. Fine for a café's
+// data volume for a long while; revisit if it ever gets slow.
+window.runReport=async function(){
+  if(!currentBranchId) return;
+  const fromStr=document.getElementById('rep-from').value;
+  const toStr=document.getElementById('rep-to').value;
+  if(!fromStr||!toStr){ alert('⚠ Pick a From and To date.'); return; }
+  if(fromStr>toStr){ alert('⚠ "From" date is after "To" date.'); return; }
+  const fromMs=new Date(fromStr+'T00:00:00').getTime();
+  const toMs=new Date(toStr+'T23:59:59.999').getTime();
+  try{
+    const [sessSnap, orderSnap, purSnap, expSnap]=await Promise.all([
+      getDocs(query(collection(db,'sessions'), where('branchId','==',currentBranchId), where('status','==','closed'))),
+      getDocs(query(collection(db,'snackOrders'), where('branchId','==',currentBranchId))),
+      getDocs(query(collection(db,'purchases'), where('branchId','==',currentBranchId))),
+      getDocs(query(collection(db,'expenses'), where('branchId','==',currentBranchId)))
+    ]);
+    const sessions=[]; sessSnap.forEach(d=>sessions.push(d.data()));
+    const sessionsInRange=sessions.filter(s=>s.endTs>=fromMs && s.endTs<=toMs);
+    const orders=[]; orderSnap.forEach(d=>orders.push(d.data()));
+    const ordersInRange=orders.filter(o=>o.date>=fromStr && o.date<=toStr);
+    const purchasesAll=[]; purSnap.forEach(d=>purchasesAll.push(d.data()));
+    const purchasesInRange=purchasesAll.filter(p=>p.date>=fromStr && p.date<=toStr);
+    const expensesAll=[]; expSnap.forEach(d=>expensesAll.push(d.data()));
+    const expensesInRange=expensesAll.filter(e=>e.date>=fromStr && e.date<=toStr);
+
+    renderReportSummary(sessionsInRange, ordersInRange);
+    renderReportProfit(sessionsInRange, ordersInRange, purchasesInRange, expensesInRange);
+    renderReportItems(ordersInRange);
+    renderReportValuation();
+  }catch(e){
+    alert('Could not run report: '+e.message);
+  }
+};
+
+function renderReportSummary(sessions, orders){
+  document.getElementById('rep-summary-card').style.display='block';
+  const gaming=sessions.reduce((s,x)=>s+(x.total||0),0);
+  const snackTotal=orders.reduce((s,x)=>s+(x.total||0),0);
+  const unpaid=orders.filter(o=>o.payment==='Unpaid').reduce((s,x)=>s+(x.total||0),0);
+  const total=gaming+snackTotal;
+  const byPay={};
+  [...sessions,...orders].forEach(r=>{ byPay[r.payment||'—']=(byPay[r.payment||'—']||0)+(r.total||0); });
+  document.getElementById('rep-summary-body').innerHTML=`
+    <div class="summary-row"><span>🎮 Gaming Revenue</span><span>${fmtMoney(gaming)}</span></div>
+    <div class="summary-row"><span>🍟 Snacks / Drinks / Tabs</span><span>${fmtMoney(snackTotal)}</span></div>
+    ${unpaid>0?`<div class="summary-row" style="color:var(--orange)"><span>　↳ of which still Unpaid</span><span>${fmtMoney(unpaid)}</span></div>`:''}
+    <div class="summary-row total"><span>TOTAL REVENUE</span><span>${fmtMoney(total)}</span></div>
+    <div style="font-size:11px;color:var(--mut);margin-top:10px;margin-bottom:2px">By Payment Method</div>
+    ${Object.entries(byPay).map(([p,v])=>`<div class="summary-row"><span>${p}</span><span>${fmtMoney(v)}</span></div>`).join('')}
+  `;
+}
+
+function renderReportProfit(sessions, orders, purchases, expenses){
+  const card=document.getElementById('rep-profit-card');
+  if(!myHasPerm('view_profit')){ card.style.display='none'; return; }
+  card.style.display='block';
+  const gaming=sessions.reduce((s,x)=>s+(x.total||0),0);
+  const snackTotal=orders.reduce((s,x)=>s+(x.total||0),0);
+  const revenue=gaming+snackTotal;
+  // COGS is estimated from each item's CURRENT cost, not a cost
+  // snapshot at sale time (snackOrders only stores the sale price) — so
+  // this drifts a little if a cost changes after the fact. Good enough
+  // for a running profit picture; a true point-in-time COGS would need
+  // cost captured on the order itself.
+  let cogs=0;
+  orders.forEach(o=>(o.items||[]).forEach(it=>{
+    const inv=inventoryItems.find(x=>x.id===it.id);
+    cogs += (inv?Number(inv.cost)||0:0)*it.qty;
+  }));
+  const purchasesTotal=purchases.reduce((s,x)=>s+(x.total||0),0);
+  const expensesTotal=expenses.reduce((s,x)=>s+(x.amount||0),0);
+  const netProfit=revenue-cogs-expensesTotal;
+  document.getElementById('rep-profit-body').innerHTML=`
+    <div class="summary-row"><span>Total Revenue</span><span>${fmtMoney(revenue)}</span></div>
+    <div class="summary-row"><span>− Cost of Goods Sold <span style="color:var(--mut)">(est.)</span></span><span>${fmtMoney(cogs)}</span></div>
+    <div class="summary-row"><span>− Expenses</span><span>${fmtMoney(expensesTotal)}</span></div>
+    <div class="summary-row total" style="color:${netProfit>=0?'var(--green)':'var(--red)'}"><span>NET PROFIT</span><span>${fmtMoney(netProfit)}</span></div>
+    <div class="summary-row" style="margin-top:8px;color:var(--mut)"><span>Restocking spend <span style="font-size:10px">(cash out, not counted in profit above — see note)</span></span><span>${fmtMoney(purchasesTotal)}</span></div>
+  `;
+}
+
+function renderReportItems(orders){
+  document.getElementById('rep-items-card').style.display='block';
+  const byItem={};
+  orders.forEach(o=>(o.items||[]).forEach(it=>{
+    if(!byItem[it.id]) byItem[it.id]={name:it.name, icon:it.icon, qty:0, revenue:0};
+    byItem[it.id].qty+=it.qty;
+    byItem[it.id].revenue+=(it.total!=null?it.total:it.price*it.qty);
+  }));
+  const rows=Object.values(byItem).sort((a,b)=>b.revenue-a.revenue).slice(0,15);
+  document.getElementById('rep-items-body').innerHTML = rows.length
+    ? rows.map(r=>`<div class="inv-row"><div style="flex:1"><div style="font-weight:700">${r.icon||'📦'} ${r.name}</div><div style="font-size:10px;color:var(--mut)">${r.qty} sold</div></div><div style="color:var(--green);font-weight:700">${fmtMoney(r.revenue)}</div></div>`).join('')
+    : '<div style="color:var(--mut);font-size:11px">No item sales in this range.</div>';
+}
+
+function renderReportValuation(){
+  const card=document.getElementById('rep-eval-card');
+  if(!myHasPerm('view_evaluation')){ card.style.display='none'; return; }
+  card.style.display='block';
+  // A snapshot of stock RIGHT NOW, not "as of" the report's date range —
+  // a true historical valuation needs the stockMovements event log,
+  // which exists in the schema but nothing writes to yet.
+  let costValue=0, retailValue=0;
+  inventoryItems.forEach(it=>{
+    costValue += (Number(it.cost)||0)*(it.stock||0);
+    retailValue += (Number(it.price)||0)*(it.stock||0);
+  });
+  document.getElementById('rep-eval-body').innerHTML=`
+    <div class="summary-row"><span>Cost Value (current stock)</span><span>${fmtMoney(costValue)}</span></div>
+    <div class="summary-row"><span>Retail Value (current stock)</span><span>${fmtMoney(retailValue)}</span></div>
+    <div class="summary-row total"><span>Potential Margin</span><span>${fmtMoney(retailValue-costValue)}</span></div>
+  `;
+}
+
+const ACTIVITY_LABELS={
+  session_open:'🎮 Started session', session_close:'🎮 Closed session',
+  shift_open:'🕐 Opened shift', shift_close:'🕐 Closed shift',
+  inventory_item_added:'📦 Added item', inventory_item_edited:'📦 Edited item', inventory_item_deleted:'📦 Deleted item',
+  snack_order:'🍟 Snack order', tab_open:'🧾 Opened tab', tab_close:'🧾 Closed tab', tab_void:'🧾 Voided tab',
+  purchase_recorded:'🛒 Recorded purchase', expense_logged:'📉 Logged expense',
+  invite_created:'🎟 Created invite', permissions_changed:'🔐 Changed permissions', settings_updated:'⚙️ Updated settings'
+};
+async function loadActivityLog(){
+  const card=document.getElementById('rep-activity-card'); if(!card) return;
+  // Same hard boundary as the Firestore rule itself (isManagerOrAbove()
+  // || isSuperAdmin()) — skip the read entirely for anyone else so it
+  // never even attempts a call the rules would reject.
+  const canView=currentUserData && (currentUserData.role==='owner'||currentUserData.role==='manager'||currentUserData.role==='superadmin');
+  if(!canView){ card.style.display='none'; return; }
+  card.style.display='block';
+  try{
+    const snap=await getDocs(query(collection(db,'activityLog'), where('branchId','==',currentBranchId)));
+    const rows=[]; snap.forEach(d=>rows.push(d.data()));
+    rows.sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));
+    const recent=rows.slice(0,50);
+    document.getElementById('rep-activity-body').innerHTML = recent.length ? recent.map(r=>{
+      const when=r.timestamp?.seconds?new Date(r.timestamp.seconds*1000).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+      return `<div class="inv-row"><div style="flex:1"><div style="color:var(--txt)">${ACTIVITY_LABELS[r.action]||r.action}${r.detail?' — '+r.detail:''}</div><div style="font-size:10px">${r.actorName||'—'} · ${when}</div></div></div>`;
+    }).join('') : 'No activity recorded yet.';
+  }catch(e){
+    document.getElementById('rep-activity-body').innerHTML='Could not load activity log: '+e.message;
+  }
+}
+
+// ═══════════ STOCK HISTORY / "AS OF ANY DATE" ═══════════
+window.openStockHistory=async function(itemId){
+  stockHistoryItemId=itemId;
+  const it=inventoryItems.find(x=>x.id===itemId); if(!it) return;
+  document.getElementById('stock-history-title').textContent='📜 '+it.name+' — '+it.stock+' in stock now';
+  document.getElementById('sh-asof-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('sh-asof-result').textContent='';
+  document.getElementById('sh-movements-body').innerHTML='Loading…';
+  document.getElementById('modal-stock-history').classList.add('active');
+  try{
+    const snap=await getDocs(query(collection(db,'stockMovements'), where('itemId','==',itemId)));
+    stockHistoryMovements=[];
+    snap.forEach(d=>stockHistoryMovements.push(d.data()));
+    stockHistoryMovements.sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));
+    renderStockMovements();
+  }catch(e){
+    document.getElementById('sh-movements-body').innerHTML='Could not load history: '+e.message;
+  }
+};
+
+const MOVEMENT_LABELS={sale:'Sale', purchase:'Purchase', adjustment:'Adjustment', transfer:'Transfer', manual:'Manual'};
+function renderStockMovements(){
+  const el=document.getElementById('sh-movements-body'); if(!el) return;
+  if(!stockHistoryMovements.length){ el.innerHTML='No movements recorded yet for this item.'; return; }
+  el.innerHTML=stockHistoryMovements.slice(0,50).map(m=>{
+    const when=m.timestamp?.seconds?new Date(m.timestamp.seconds*1000).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'just now';
+    const sign=m.delta>0?'+':'';
+    return `<div class="summary-row"><span>${when} · ${MOVEMENT_LABELS[m.reason]||m.reason}</span><span style="color:${m.delta>0?'var(--green)':'var(--red)'};font-weight:700">${sign}${m.delta}</span></div>`;
+  }).join('');
+}
+
+// The actual "stock as of any date" feature: current stock is already
+// the running total of every movement ever recorded, so subtracting
+// every movement that happened AFTER the chosen cutoff reconstructs
+// exactly what stock was AT that cutoff — no need to sum from zero.
+window.computeStockAsOf=function(){
+  const it=inventoryItems.find(x=>x.id===stockHistoryItemId); if(!it) return;
+  const dateStr=document.getElementById('sh-asof-date').value;
+  if(!dateStr) return;
+  const cutoffMs=new Date(dateStr+'T23:59:59.999').getTime();
+  const afterSum=stockHistoryMovements
+    .filter(m=>(m.timestamp?.seconds||0)*1000>cutoffMs)
+    .reduce((s,m)=>s+(m.delta||0),0);
+  const asOfStock=it.stock-afterSum;
+  document.getElementById('sh-asof-result').textContent=`Stock as of ${dateStr} (end of day): ${asOfStock} units`;
+};
+
+// ═══════════ STAFF MANAGEMENT ═══════════
+window.generateInvite=async function(){
+  const role=document.getElementById('invite-role').value;
+  const code=Math.random().toString(36).slice(2,8).toUpperCase();
+  try{
+    await setDoc(doc(db,'invites',code),{
+      tenantId:currentTenantId, role, branchIds:[currentBranchId],
+      used:false, createdBy:currentUserData.name, createdAt:serverTimestamp()
+    });
+    document.getElementById('invite-code-text').textContent=code;
+    document.getElementById('invite-code-box').style.display='block';
+    logActivity('invite_created', role+' · '+code);
+  }catch(e){
+    alert('Could not generate invite: '+e.message+(e.code==='permission-denied'?' — you may not have permission to manage staff.':''));
+  }
+};
+
+function renderStaffList(){
+  const el=document.getElementById('staff-list');if(!el) return;
+  const canManage=myHasPerm('manage_staff');
+  if(!teamMembers.length){ el.innerHTML='No team members found.'; return; }
+  const roleColors={owner:'b-green',manager:'b-mut',staff:'b-mut',superadmin:'b-red'};
+  el.innerHTML=teamMembers.map(m=>{
+    const isSelfOrOwner=m.role==='owner';
+    return `<div class="staff-row">
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:13px">${m.name}</div>
+        <span class="badge ${roleColors[m.role]||'b-mut'}" style="font-size:9px">${m.role.toUpperCase()}</span>
+      </div>
+      ${canManage&&!isSelfOrOwner?`<button class="icon-btn" onclick="openPermsModal('${m.id}')">Permissions</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+window.openPermsModal=function(uid){
+  const m=teamMembers.find(x=>x.id===uid);if(!m) return;
+  editingPermsUid=uid;
+  document.getElementById('perms-modal-title').textContent='Permissions — '+m.name;
+  const perms=m.permissions||{};
+  document.getElementById('perms-toggle-list').innerHTML=Object.keys(PERM_LABELS).map(key=>`
+    <div class="perm-toggle-row">
+      <span>${PERM_LABELS[key]}</span>
+      <label class="toggle-switch">
+        <input type="checkbox" data-perm="${key}" ${perms[key]===true?'checked':''}>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  `).join('');
+  document.getElementById('modal-perms').classList.add('active');
+};
+
+window.savePermissions=async function(){
+  if(!editingPermsUid) return;
+  const newPerms={};
+  document.querySelectorAll('#perms-toggle-list input[type=checkbox]').forEach(inp=>{
+    newPerms[inp.dataset.perm]=inp.checked;
+  });
+  try{
+    await updateDoc(doc(db,'users',editingPermsUid),{permissions:newPerms});
+    const target=teamMembers.find(m=>m.id===editingPermsUid);
+    logActivity('permissions_changed', target?.name||editingPermsUid);
+    closeModal('modal-perms');
+  }catch(e){
+    alert('Could not save permissions: '+e.message+(e.code==='permission-denied'?' — you may not have permission to manage staff.':''));
+  }
+};
+
+// ═══════════ SETTINGS ═══════════
+window.loadSettingsForm=function(){
+  if(!currentBranchData) return;
+  const s=currentBranchData.settings;
+  document.getElementById('set-name').value=s.cafeName||'';
+  document.getElementById('set-currency').value=s.currency||'$';
+  document.getElementById('set-rate').value=s.defaultRate||10;
+  document.getElementById('set-numstations').value=s.numStations||4;
+  document.getElementById('set-alarm').checked=s.alarmEnabled!==false;
+  buildStationEditors();
+};
+
+window.buildStationEditors=function(){
+  const n=parseInt(document.getElementById('set-numstations').value)||4;
+  const s=currentBranchData.settings;
+  const el=document.getElementById('station-editors');
+  el.innerHTML=Array.from({length:n},(_,i)=>`
+    <div class="station-editor">
+      <div class="station-editor-title">STATION ${i+1}</div>
+      <div class="station-editor-grid">
+        <input type="text" id="se-name-${i}" placeholder="Name" value="${s.stationNames?.[i]||'Station '+(i+1)}">
+        <input type="number" id="se-rate-${i}" placeholder="Rate/hr" step="0.01" min="0" value="${s.stationRates?.[i]??s.defaultRate}">
+        <input type="text" id="se-type-${i}" placeholder="Device (PS5, SIM, etc)" value="${s.stationTypes?.[i]||'PS5'}">
+      </div>
+    </div>
+  `).join('');
+};
+
+window.saveBranchSettings=async function(){
+  const n=parseInt(document.getElementById('set-numstations').value)||4;
+  const names=[],rates=[],types=[];
+  for(let i=0;i<n;i++){
+    names.push(document.getElementById('se-name-'+i)?.value||'Station '+(i+1));
+    rates.push(parseFloat(document.getElementById('se-rate-'+i)?.value)||10);
+    types.push(document.getElementById('se-type-'+i)?.value||'PS5');
+  }
+  const newSettings={
+    ...currentBranchData.settings,
+    cafeName:document.getElementById('set-name').value.trim()||'Drift Zone',
+    currency:document.getElementById('set-currency').value.trim()||'$',
+    defaultRate:parseFloat(document.getElementById('set-rate').value)||10,
+    numStations:n, stationNames:names, stationRates:rates, stationTypes:types,
+    alarmEnabled:document.getElementById('set-alarm').checked
+  };
+  try{
+    await updateDoc(doc(db,'branches',currentBranchId),{settings:newSettings});
+    logActivity('settings_updated', newSettings.cafeName);
+    alert('✓ Settings saved');
+  }catch(e){
+    alert('Could not save settings: '+e.message+(e.code==='permission-denied'?' — you may not have permission to edit settings.':''));
+  }
+};
+
+// ── Sign in ──
+window.signIn = async function(){
+  const email=document.getElementById('si-email').value.trim();
+  const password=document.getElementById('si-password').value;
+  if(!email||!password){ showErr('signin-err','Enter email and password'); return; }
+  try{
+    await signInWithEmailAndPassword(authInst,email,password);
+  }catch(e){
+    showErr('signin-err', e.code==='auth/invalid-credential' ? 'Wrong email or password' : e.message);
+  }
+};
+
+// ── Sign up: new business + owner (free-plan — direct client writes,
+// protected by firestore.rules, no Cloud Functions needed) ──
+// BUG FIX: Firebase Auth account creation and the Firestore writes that
+// follow it are NOT one atomic operation — there's no server-side
+// transaction spanning both (that would need Cloud Functions, which the
+// free plan doesn't have). If the Auth account gets created but a
+// Firestore write right after it fails (rules still propagating, a
+// transient network blip, anything), the Auth account is now permanent
+// and every retry fails immediately with "email-already-in-use" — even
+// though the actual business (tenant/branch/user docs) was never
+// finished. This trapped the signup with no way to recover except
+// manually deleting the orphaned Auth account from the Firebase Console.
+//
+// Fix: if account creation fails because the email is already in use,
+// try signing in with the same email/password instead of just giving
+// up. If that succeeds and there's no user doc yet, we know this is
+// exactly that half-finished state — resume the setup using the
+// now-signed-in session rather than starting over.
+window.signUp = async function(){
+  const businessName=document.getElementById('su-business').value.trim();
+  const ownerName=document.getElementById('su-name').value.trim();
+  const email=document.getElementById('su-email').value.trim();
+  const password=document.getElementById('su-password').value;
+  if(!businessName||!ownerName||!email||!password){ showErr('signup-err','Fill in every field'); return; }
+  if(password.length<6){ showErr('signup-err','Password must be at least 6 characters'); return; }
+
+  let uid;
+  try{
+    const cred=await createUserWithEmailAndPassword(authInst,email,password);
+    uid=cred.user.uid;
+  }catch(e){
+    if(e.code==='auth/email-already-in-use'){
+      // Could be: (a) genuinely someone else's account, or (b) our own
+      // half-finished signup from a previous failed attempt. Try signing
+      // in with what was just typed to tell the two apart.
+      try{
+        const cred=await signInWithEmailAndPassword(authInst,email,password);
+        uid=cred.user.uid;
+      }catch(signInErr){
+        showErr('signup-err','That email is already registered with a different password. Sign in instead, or use a different email.');
+        return;
+      }
+    }else{
+      showErr('signup-err', e.message);
+      return;
+    }
+  }
+
+  // At this point we have a signed-in uid, either freshly created or
+  // recovered via sign-in. Check whether setup already finished (e.g. a
+  // previous attempt actually succeeded and this is a genuine retry) —
+  // if so, don't create a second business by accident.
+  try{
+    const existingUserSnap=await getDoc(doc(db,'users',uid));
+    if(existingUserSnap.exists()){
+      showErr('signup-err','This account is already set up — signing you in…');
+      setTimeout(()=>handleAuthState(authInst.currentUser),800);
+      return;
+    }
+    const tenantRef=doc(collection(db,'tenants'));
+    const branchRef=doc(collection(db,'branches'));
+    await setDoc(tenantRef,{
+      name:businessName, status:'trial', createdBy:uid,
+      createdAt:new Date().toISOString(),
+      trialEndsAt:new Date(Date.now()+14*24*60*60*1000).toISOString()
+    });
+    await setDoc(branchRef,{
+      tenantId:tenantRef.id, name:'Main Branch', createdAt:new Date().toISOString(),
+      settings:{cafeName:businessName,currency:'$',defaultRate:10,numStations:4,
+        stationNames:['PS5 #1','PS5 #2','PS4 #1','PS4 #2'],stationRates:[10,10,10,10],
+        stationTypes:['PS5','PS5','PS4','PS4'],alarmEnabled:true,
+        timePackages:[{label:'Open',mins:0},{label:'1 hour',mins:60},{label:'2 hours',mins:120}]}
+    });
+    await setDoc(doc(db,'users',uid),{
+      tenantId:tenantRef.id, name:ownerName, role:'owner',
+      branchIds:[branchRef.id], permissions:PERMISSION_DEFAULTS.owner,
+      createdAt:new Date().toISOString()
+    });
+    await setDoc(doc(collection(db,'activityLog')),{
+      tenantId:tenantRef.id, branchId:branchRef.id, uid,
+      action:'tenant_created', detail:`${ownerName} created business "${businessName}"`,
+      timestamp:new Date().toISOString()
+    });
+  }catch(e){
+    showErr('signup-err','Account created, but business setup failed: '+e.message+' — try again, it will resume from here instead of starting over.');
+  }
+};
+
+// ── Join via invite code ──
+// Same class of bug as signUp() — Auth account creation and the
+// Firestore user-doc write aren't one atomic operation. Same fix:
+// resume via sign-in if the email is already registered but the user
+// doc never got created.
+window.joinTeam = async function(){
+  const code=document.getElementById('jn-code').value.trim().toUpperCase();
+  const name=document.getElementById('jn-name').value.trim();
+  const email=document.getElementById('jn-email').value.trim();
+  const password=document.getElementById('jn-password').value;
+  if(!code||!name||!email||!password){ showErr('join-err','Fill in every field'); return; }
+
+  const inviteSnap=await getDoc(doc(db,'invites',code));
+  if(!inviteSnap.exists()||inviteSnap.data().used){
+    showErr('join-err','Invalid or already-used invite code'); return;
+  }
+  const invite=inviteSnap.data();
+
+  let uid;
+  try{
+    const cred=await createUserWithEmailAndPassword(authInst,email,password);
+    uid=cred.user.uid;
+  }catch(e){
+    if(e.code==='auth/email-already-in-use'){
+      try{
+        const cred=await signInWithEmailAndPassword(authInst,email,password);
+        uid=cred.user.uid;
+      }catch(signInErr){
+        showErr('join-err','That email is already registered with a different password. Sign in instead, or use a different email.');
+        return;
+      }
+    }else{
+      showErr('join-err', e.message);
+      return;
+    }
+  }
+
+  try{
+    const existingUserSnap=await getDoc(doc(db,'users',uid));
+    if(existingUserSnap.exists()){
+      showErr('join-err','This account is already set up — signing you in…');
+      setTimeout(()=>handleAuthState(authInst.currentUser),800);
+      return;
+    }
+    await setDoc(doc(db,'users',uid),{
+      tenantId:invite.tenantId, name, role:invite.role, branchIds:invite.branchIds,
+      permissions:PERMISSION_DEFAULTS[invite.role]||PERMISSION_DEFAULTS.staff,
+      inviteCode:code, createdAt:new Date().toISOString()
+    });
+    await setDoc(doc(db,'invites',code),{...invite,used:true});
+  }catch(e){
+    showErr('join-err','Account created, but joining the team failed: '+e.message+' — try again, it will resume from here.');
+  }
+};
+
+window.signOutUser = function(){
+  [sessionsUnsub,shiftUnsub,inventoryUnsub,staffUnsub,branchUnsub,tabsUnsub,purchasesUnsub,expensesUnsub].forEach(u=>u&&u());
+  sessionsUnsub=shiftUnsub=inventoryUnsub=staffUnsub=branchUnsub=null;
+  signOut(authInst);
+};
+
+// ── Boot: reuse a saved connection if we have one ──
+(function boot(){
+  const saved=JSON.parse(localStorage.getItem('dzc_config')||'null');
+  if(saved){
+    document.getElementById('cfg-apikey').value=saved.apiKey;
+    document.getElementById('cfg-projectid').value=saved.projectId;
+    window.saveConfigAndInit();
+  }else{
+    showStep('step-config');
+  }
+})();
+</script>
+</body>
+</html>

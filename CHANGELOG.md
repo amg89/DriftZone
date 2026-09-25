@@ -1,9 +1,16 @@
-# Changelog
+# Changelog — Local App (drift-zone.html)
 
-All notable changes to Drift Zone are documented here.
+This file covers the **local, localStorage-based app** only (repo root
+`drift-zone.html` + `releases/`). The newer cloud/multi-tenant rebuild
+lives in [`cloud/`](./cloud/) and is tracked separately — see
+[`cloud/DATA_MODEL.md`](./cloud/DATA_MODEL.md) for what's in it.
 
 | Version | Date | Highlight |
 | --- | --- | --- |
+| v2.9.29 | 2025-03-03 | Fixed `delOrder()` never restoring stock on any deleted standalone order (not just VodafoneCash) |
+| v2.9.28 | 2025-03-02 | Permanent sequential Shift Numbers; shift label on Tab history; Open Shift auto-fills staff name |
+| v2.9.27 | 2025-03-01 | Shift label (🕐 badge) on Sessions & Orders history, retroactive; "Hide out of stock" in Tabs |
+| v2.9.26 | 2025-02-28 | Receipts for Snacks/Tabs; Move Session between stations |
 | v2.9.25 | 2025-02-27 | **Urgent fix** — persist() now handles storage failures instead of failing silently; added Storage Health diagnostics |
 | v2.9.24 | 2025-02-26 | "Hide out of stock" toggle added to Inventory tab |
 | v2.9.23 | 2025-02-25 | "Hide out of stock" toggle added to Snacks Order menu |
@@ -42,11 +49,14 @@ All notable changes to Drift Zone are documented here.
 | v2.4.1 | — | Custom price per snack item |
 | v2.4.0 | — | PWA install, peak hours heatmap, receipts, shifts |
 
-> **v3.0.0 / v3.1.0 (Firebase multi-branch line): discontinued.** After
-> extended work, this branch was set aside to focus on maturing the
-> localStorage version instead. **Production runs on v2.9.25** (the
-> version at repo root). If cloud/multi-tenant work resumes later, it
-> will likely be rebuilt fresh rather than resumed from v3.1.0.
+> **v3.0.0 / v3.1.0 (Firebase multi-branch line): discontinued and removed.**
+> After extended work, this branch was set aside to focus on maturing
+> the localStorage version instead, per an explicit decision to free up
+> space for that work. It is **not** kept in this repo's `releases/`
+> anymore. **Production (local app) runs on v2.9.29** (the version at
+> repo root). Cloud/multi-tenant work *did* resume later — rebuilt
+> fresh from scratch on Firestore, exactly as anticipated here — see
+> [`cloud/`](./cloud/).
 
 > **⚠️ Do not roll back to v2.9.18 or v2.9.19.** Both contain a Remote
 > Dashboard sync feature that caused real bugs (tab items not updating
@@ -55,6 +65,55 @@ All notable changes to Drift Zone are documented here.
 > `releases/` for historical reference only.
 
 ---
+
+## v2.9.29 — 2025-03-03
+
+**Bug fix — deleted orders never restored stock.** `delOrder()` only ever
+removed the order record — it never restored the stock that `checkout()`
+deducted when the order was placed. Affected **every** deleted
+standalone snack order regardless of payment method (VodafoneCash just
+happened to be the one that surfaced it).
+
+- Deleting a standalone order now correctly returns stock — raw stock
+  for plain items, ingredients for recipe items
+- Also reverses any empty-bottle credit for returnable-bottle items
+- Tab-checkout orders are deliberately left alone here — their stock is
+  handled at add-to-tab time, and "↩ Undo Checkout" is the correct tool
+  for reversing those
+- Order deletions now logged to the Activity Log
+
+## v2.9.28 — 2025-03-02
+
+- **Permanent sequential Shift Numbers** — Shift #1, #2, #3… shown in
+  Shift Management and every shift badge across Sessions/Orders/Tabs.
+  Existing shifts were auto-numbered chronologically on first open — no
+  manual work, no data loss.
+- Shift label added to Tab history (matching Sessions/Orders)
+- Open Shift's Staff Name field now auto-fills from the signed-in
+  account instead of asking for it again (read-only; switch users via
+  the header badge if opening on someone else's behalf)
+
+## v2.9.27 — 2025-03-01
+
+- Every closed session and order (standalone, session-attached, or from
+  a tab) now shows a **🕐 [Staff Name]** badge for which shift it
+  happened during — computed retroactively from existing timestamps
+  using the same matching logic as cash reconciliation, no migration
+  needed. Entries with no shift open show "No shift" instead of blank.
+- "Hide out of stock" toggle added to the item-adding menu inside a
+  Client Tab (already existed for Snacks Order menu and Inventory)
+
+## v2.9.26 — 2025-02-28
+
+- **Receipts for Snacks & Tabs** — print receipt for standalone snack
+  orders and tab checkouts, same style as session receipts, via a 🖨
+  button in the Orders tab
+- **Move Session Between Stations** — a "🔀 MOVE" button on busy station
+  cards moves an in-progress session to any free station. Elapsed time,
+  player, and snacks carry over; the original hourly rate is kept for
+  the whole session (no split-billing — use the Adjustment field at
+  close time for a rare correction). Every move is logged to the
+  Activity Log.
 
 ## v2.9.25 — 2025-02-27 (urgent)
 

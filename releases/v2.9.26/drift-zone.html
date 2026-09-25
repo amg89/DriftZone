@@ -361,7 +361,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
   </div>
   <div class="logo">DRIFT<span class="logo-dot"> </span>ZONE</div>
   <div class="sub">Gaming Cafe Manager</div>
-  <div class="ver-badge" onclick="sw('changelog')">v2.9.29 — What's New?</div>
+  <div class="ver-badge" onclick="sw('changelog')">v2.9.26 — What's New?</div>
   <div class="ver-badge" id="current-staff-badge" onclick="switchUser()" style="cursor:pointer" title="Tap to switch user">👤 —</div>
 </header>
 
@@ -964,10 +964,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
       <button class="fbtn" onclick="tabMenuFilter('bar',this)">🍺</button>
       <button class="fbtn" onclick="tabMenuFilter('indomie',this)">🍜</button>
     </div>
-    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--mut);margin-bottom:8px;user-select:none">
-      <input type="checkbox" id="tab-hide-oos" onchange="buildTabMenu()" style="width:15px;height:15px;cursor:pointer">
-      Hide out of stock
-    </label>
     <div class="mg" id="tabdetail-menu" style="margin-bottom:10px"></div>
     <!-- Totals -->
     <div style="background:linear-gradient(135deg,rgba(120,60,200,.08),rgba(100,0,220,.06));border:1px solid var(--purple);border-radius:10px;padding:12px;margin-bottom:12px">
@@ -1090,7 +1086,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 
 <script>
 // ═══════════ STATE ═══════════
-const APP_VER='2.9.29';
+const APP_VER='2.9.26';
 let S={
   sessions:[],open:{},snackOrders:[],expenses:[],inventory:[],cart:{},cartPrices:{},shifts:[],purchases:[],clientTabs:[],
   staff:[],activityLog:[], // v2.9.10: local staff PIN + activity log
@@ -1137,19 +1133,6 @@ function load(){
       if(openIdx===-1) S.settings.timePackages.unshift({label:'Open',mins:0});
     }else{
       S.settings.timePackages=[{label:'Open',mins:0},{label:'15 min',mins:15},{label:'30 min',mins:30},{label:'1 hour',mins:60},{label:'2 hours',mins:120},{label:'3 hours',mins:180}];
-    }
-    // v2.9.28: backfill shift numbers for shifts created before this
-    // feature existed — numbered chronologically by start time so
-    // existing history gets sensible, stable numbers immediately.
-    const unnumbered=S.shifts.filter(s=>!s.shiftNumber);
-    if(unnumbered.length){
-      const numbered=S.shifts.filter(s=>s.shiftNumber).sort((a,b)=>a.shiftNumber-b.shiftNumber);
-      let next=numbered.length?numbered[numbered.length-1].shiftNumber+1:1;
-      // Assign in chronological order among the unnumbered ones specifically
-      unnumbered.sort((a,b)=>(a.startTs||0)-(b.startTs||0)).forEach(s=>{s.shiftNumber=next++;});
-      S.settings.nextShiftNumber=Math.max(S.settings.nextShiftNumber||1,next);
-    }else if(!S.settings.nextShiftNumber){
-      S.settings.nextShiftNumber=(S.shifts.length?Math.max(...S.shifts.map(s=>s.shiftNumber||0))+1:1);
     }
   }catch(e){}
 }
@@ -1822,56 +1805,18 @@ function renderOrders(){
   const el=document.getElementById('orders-list');if(!el) return;
   if(!all.length){el.innerHTML='<div class="empty"><div class="ei">🧾</div>No orders in this range.</div>';return;}
   const payIcons={Cash:'💵',VodafoneCash:'📱',Instapay:'⚡'};
-  el.innerHTML=all.map((o,i)=>{
-    // Standalone/tab orders use uid() ids (timestamp_random); session
-    // snacks use 'sess_'+timestamp. Parse whichever shape this row has.
-    const ts=o.fromSession?parseInt(o.id.replace('sess_','')):parseInt(o.id.split('_')[0]);
-    return `
+  el.innerHTML=all.map((o,i)=>`
     <div class="order-row">
       <div class="or-num">${all.length-i}</div>
       <div class="or-info">
         <div class="or-items">${o.items.map(x=>`${x.icon||'📦'} ${x.name} ×${x.qty}`).join(' · ')}</div>
-        <div class="or-meta">📅 ${o.date} ${o.time?'🕐 '+o.time:''} ${o.payment?payIcons[o.payment]+' '+o.payment:''} ${o.fromSession?`<span class="badge bc2">Session: ${o.station} — ${o.player}</span>`:`<span class="badge bp2">Standalone</span>`} ${!isNaN(ts)?shiftLabelHTML(ts):''}</div>
+        <div class="or-meta">📅 ${o.date} ${o.time?'🕐 '+o.time:''} ${o.payment?payIcons[o.payment]+' '+o.payment:''} ${o.fromSession?`<span class="badge bc2">Session: ${o.station} — ${o.player}</span>`:`<span class="badge bp2">Standalone</span>`}</div>
       </div>
       <div class="or-total">${fmt(o.total)}</div>
       ${!o.fromSession?`<button class="btn btn-ghost btn-xs" onclick="printOrderReceipt('${o.id}')" title="Print receipt">🖨</button><button class="btn btn-r btn-xs" onclick="delOrder('${o.id}')">✕</button>`:''}
-    </div>`;
-  }).join('');
+    </div>`).join('');
 }
-// BUG FIX (v2.9.29): delOrder() only ever removed the order record —
-// it never restored the stock that checkout() deducted when the order
-// was placed. Every deleted standalone order silently lost that stock
-// forever, regardless of payment method (not specific to VodafoneCash —
-// that just happened to be the order that surfaced it).
-// Tab-sourced orders (o.isTab) are deliberately NOT touched here — their
-// stock was already deducted when items were added to the tab, not at
-// checkout time, and undoTabCheckout() is the correct tool for reversing
-// those; restoring stock here too would double it up incorrectly.
-function delOrder(id){
-  const o=S.snackOrders.find(x=>x.id===id);
-  if(!o) return;
-  if(!confirm('Delete order?'+(o.isTab?'':' This will restore the stock for its items.'))) return;
-  if(!o.isTab){
-    o.items.forEach(x=>{
-      const inv=S.inventory.find(i=>i.id===x.id);
-      if(!inv) return;
-      if(inv.recipe&&inv.recipe.length){
-        inv.recipe.forEach(r=>{const ing=S.inventory.find(i=>i.id===r.ingredientId);if(ing) ing.stock+=r.qty*x.qty;});
-      }else{
-        inv.stock+=x.qty;
-      }
-      // Reverse the empty-bottle credit too — this sale never happened
-      if(inv.linkedEmptyId){
-        const empty=S.inventory.find(i=>i.id===inv.linkedEmptyId);
-        if(empty) empty.stock=Math.max(0,empty.stock-x.qty);
-      }
-    });
-  }
-  S.snackOrders=S.snackOrders.filter(x=>x.id!==id);
-  persist();renderOrders();renderInventory();buildMenuGrid();updateLowStockBadge();
-  toast(o.isTab?'Deleted':'✓ Deleted — stock restored');
-  logActivity('delete_order',`Deleted order (${o.isTab?'tab':'standalone'}) — ${fmt(o.total)}`);
-}
+function delOrder(id){if(!confirm('Delete order?')) return;S.snackOrders=S.snackOrders.filter(o=>o.id!==id);persist();renderOrders();toast('Deleted');}
 
 // ═══════════ SESSIONS ═══════════
 function setSessPeriod(p,btn){
@@ -1921,7 +1866,7 @@ function renderSessions(){
     const tstr=s.endDate&&s.endDate!==s.date?`${s.date} ${s.start}→${s.endDate} ${s.end}`:`${s.date} 🕐 ${s.start}→${s.end}`;
     return `<div class="sit"><div class="snum">${closed.length-i}</div>
       <div class="si2"><div class="sst">${s.station} <span class="badge bc2">${s.deviceType||'PS5'}</span> <span class="badge by2">${s.packageLabel||'Open'}</span> <span style="color:var(--mut);font-size:9px">— ${s.player}</span>${s.snack>0?`<span class="badge bp2" style="margin-left:3px">🍟 ${fmt(s.snack)}</span>`:''}${s.adjustedAmount?`<span class="badge bt2" style="margin-left:3px">adj</span>`:''}</div>
-        <div class="stm">📅 ${tstr} ${s.payment?payIcons[s.payment]+' '+s.payment:''} ${shiftLabelHTML(s.id)}</div></div>
+        <div class="stm">📅 ${tstr} ${s.payment?payIcons[s.payment]+' '+s.payment:''}</div></div>
       <div><div class="sdur">${fmtDur(s.mins)}</div><div style="font-size:8px;color:var(--mut);text-align:right">${fmt(s.rate)}/hr</div></div>
       <div><div class="sprc">${fmt(s.total)}</div>${s.adjustedAmount?`<div style="font-size:8px;color:var(--mut);text-align:right;text-decoration:line-through">${fmt(s.calcTotal)}</div>`:''}
         <button class="btn btn-ghost btn-xs" onclick="printReceipt(${s.id})" style="margin-top:3px;display:block">🖨</button><button class="btn btn-r btn-xs" onclick="delSession(${s.id})" style="margin-top:3px">✕</button></div>
@@ -2297,24 +2242,7 @@ function exportReportExcel(){
 
 // ═══════════ CHANGELOG ═══════════
 const CHANGELOG=[
-  {version:'2.9.29',date:'2025-03-03',isNew:true,changes:[
-    {text:'BUG FIX: Deleting a standalone snack order never restored the stock it had deducted — the item was gone for good regardless of payment method. Not specific to VodafoneCash, this affected every deleted standalone order.',isNew:true},
-    {text:'Deleting a standalone order now correctly returns stock (raw stock, or ingredients for recipe items) and reverses any empty-bottle credit for returnable-bottle items',isNew:true},
-    {text:'Tab-checkout orders are deliberately NOT affected by this fix — their stock is handled at add-to-tab time, and Undo Checkout is already the correct tool for reversing those',isNew:true},
-    {text:'Order deletions are now logged to the Activity Log',isNew:true},
-  ]},
-  {version:'2.9.28',date:'2025-03-02',isNew:false,changes:[
-    {text:'NEW: Shift labels added to Tab order history too — same "🕐 #N Staff" badge now shown on closed/waived tabs, matching Sessions and Orders',isNew:true},
-    {text:'NEW: Shift Number — every shift now has a permanent, sequential number (Shift #1, #2, #3...). Shown in Shift Management (open + closed shifts) and in every shift badge across Sessions, Orders, and Tabs history',isNew:true},
-    {text:'Existing shifts from before this update were automatically numbered in chronological order — no data loss, no manual work needed',isNew:true},
-    {text:'Open Shift now auto-fills Staff Name from your signed-in account instead of asking you to type it again — use the header badge to switch user first if you are opening on behalf of someone else',isNew:true},
-  ]},
-  {version:'2.9.27',date:'2025-03-01',isNew:false,changes:[
-    {text:'NEW: Sessions and Orders history now show which shift each entry happened during (e.g. "🕐 Ahmed") — works retroactively on all existing history, using the same shift-matching logic already used for cash reconciliation',isNew:true},
-    {text:'Entries with no shift open at the time show a clear "No shift" badge instead of silently omitting the info',isNew:true},
-    {text:'NEW: "Hide out of stock" toggle added to the Tab item-adding menu — matches the same toggle already in Snacks Order and Inventory',isNew:true},
-  ]},
-  {version:'2.9.26',date:'2025-02-28',isNew:false,changes:[
+  {version:'2.9.26',date:'2025-02-28',isNew:true,changes:[
     {text:'NEW: Print receipt for standalone Snack orders and Tab checkouts — same receipt style as sessions, available from the Orders tab (🖨 button next to each order)',isNew:true},
     {text:'NEW: Move Session between stations — a "🔀 MOVE" button appears alongside Extend on busy station cards, showing a list of free stations to move the session to',isNew:true},
     {text:'Moving a session carries over elapsed time, player name, and snacks unchanged. Original hourly rate is kept for the whole session (no split-billing across two rates) — use the existing Adjustment field at close time for the rare case that needs correcting by hand',isNew:true},
@@ -3222,21 +3150,17 @@ function removeTabItem(tabId,idx){
 function buildTabMenu(){
   const g=document.getElementById('tabdetail-menu');if(!g) return;
   const isIndomieV=cat=>cat==='indomie'||cat==='indomie_double'||cat==='indomie_ready';
-  const hideOOS=document.getElementById('tab-hide-oos')?.checked;
   const items=S.inventory.filter(x=>{
     if(x.cat==='other') return false;
-    if(tabMenuCat!=='all'){
-      if(tabMenuCat==='indomie'){ if(!isIndomieV(x.cat)) return false; }
-      else if(x.cat!==tabMenuCat) return false;
-    }
-    if(hideOOS&&effectiveStock(x)<=0) return false;
-    return true;
+    if(tabMenuCat==='all') return true;
+    if(tabMenuCat==='indomie') return isIndomieV(x.cat);
+    return x.cat===tabMenuCat;
   });
-  if(!items.length){g.innerHTML=`<div style="color:var(--mut);font-size:10px;grid-column:1/-1;text-align:center;padding:10px">${hideOOS?'Nothing in stock right now.':'No items.'}</div>`;return;}
+  if(!items.length){g.innerHTML='<div style="color:var(--mut);font-size:10px;grid-column:1/-1;text-align:center;padding:10px">No items.</div>';return;}
   g.innerHTML=items.map(it=>{
     const eff=effectiveStock(it);
     const unavail=eff<=0;
-    return `<div class="mi" onclick="addItemToTab('${it.id}')" style="${unavail?'opacity:.5;cursor:not-allowed':''}">
+    return `<div class="mi ${unavail?'':''}}" onclick="addItemToTab('${it.id}')" style="${unavail?'opacity:.5;cursor:not-allowed':''}">
       <div class="mi-icon">${it.icon||'📦'}</div>
       <div class="mi-name">${it.name}</div>
       <div class="mi-price">${fmt(it.price)}</div>
@@ -3356,13 +3280,12 @@ function renderClosedTabs(){
     const isWaived=t.status==='waived';
     const wasCollectedDebt=t.collectedAt;
     const canUndo=t.closedDate===todayStr(); // same-day undo only, to protect historical reports
-    const closeTs=(t.closedDate&&t.closedAt)?new Date(t.closedDate+'T'+t.closedAt).getTime():null;
     return `<div style="background:${isWaived?'rgba(255,140,0,.05)':'var(--s2)'};border:1px solid ${isWaived?'var(--orange)':'var(--bdr)'};border-radius:10px;padding:11px;margin-bottom:7px;animation:slideIn .25s ease">
       <div style="display:flex;align-items:center;gap:10px">
         <div style="width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,${isWaived?'var(--orange),#995500':'var(--purple),#5500aa'});display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:#fff">${closed.length-i}</div>
         <div style="flex:1">
           <div style="font-weight:700;font-size:13px">${t.name} ${t.stationName?`<span class="badge bc2">${t.stationName}</span>`:''}${isWaived?'<span class="badge bo2">WAIVED</span>':''}${wasCollectedDebt?'<span class="badge by2">collected debt</span>':''}</div>
-          <div style="font-size:9px;color:var(--mut)">${t.date} ${t.time} → ${t.closedAt||'?'} &nbsp; ${isWaived?'🤝 Waived':(payIcons[t.payment]||'')+' '+(t.payment||'')} ${closeTs?shiftLabelHTML(closeTs):''}</div>
+          <div style="font-size:9px;color:var(--mut)">${t.date} ${t.time} → ${t.closedAt||'?'} &nbsp; ${isWaived?'🤝 Waived':(payIcons[t.payment]||'')+' '+(t.payment||'')}</div>
           <div style="font-size:10px;color:var(--mut);margin-top:2px">${t.items.map(x=>`${x.icon||''}${x.name} ×${x.qty}`).join(' · ')}</div>
         </div>
         <div style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:900;color:${isWaived?'var(--orange)':'var(--purple)'}">${fmt(t.finalTotal||0)}</div>
@@ -3915,23 +3838,6 @@ function renderHeatmap(){
 const PAY_METHODS=['Cash','VodafoneCash','Instapay'];
 const PAY_ICONS={Cash:'💵',VodafoneCash:'📱',Instapay:'⚡'};
 
-// v2.9.27: which shift did this session/order happen during? Uses the
-// SAME time-window matching shiftRevenue() already uses for cash
-// reconciliation, so "which shift" means the same thing everywhere in
-// the app. Works retroactively on existing history — no data migration
-// needed, since it's computed from timestamps already stored.
-function findShiftForTimestamp(ts){
-  return S.shifts.find(sh=>{
-    const endTs=sh.endTs||Date.now(); // an still-open shift counts as ongoing
-    return ts>=sh.startTs&&ts<=endTs;
-  })||null;
-}
-function shiftLabelHTML(ts){
-  const sh=findShiftForTimestamp(ts);
-  if(!sh) return '<span class="badge" style="background:rgba(96,112,160,.15);color:var(--mut)" title="No shift was open at this time">No shift</span>';
-  const open=!sh.end;
-  return `<span class="badge bc2" title="${sh.date} ${sh.startTime}${sh.endTime?' – '+sh.endTime:' (still open)'}">🕐 #${sh.shiftNumber||'?'} ${sh.staff||'—'}${open?' (open)':''}</span>`;
-}
 function shiftRevenue(sh){
   // Sessions within shift window
   const endTs=sh.endTs||Date.now();
@@ -4022,9 +3928,9 @@ function renderShifts(){
   if(openShift){
     const m=Math.round((Date.now()-openShift.startTs)/60000);
     const{sessInShift,ordersInShift,gameRevenue,snackRevenue,discountTotal,markupTotal,totalCash,payBreakdown,deviceBreakdown}=shiftRevenue(openShift);
-    statusEl.innerHTML=`<span class="badge bg2" style="font-size:10px;padding:4px 12px"><span class="pdot"></span> SHIFT #${openShift.shiftNumber||'?'} OPEN</span>`;
+    statusEl.innerHTML=`<span class="badge bg2" style="font-size:10px;padding:4px 12px"><span class="pdot"></span> SHIFT OPEN</span>`;
     currentEl.innerHTML=`<div class="shift-open-card">
-      <div style="font-family:'Orbitron',sans-serif;font-size:12px;color:var(--green);margin-bottom:12px">● CURRENT SHIFT #${openShift.shiftNumber||'?'} — ${openShift.staff||'Staff'}</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:12px;color:var(--green);margin-bottom:12px">● CURRENT SHIFT — ${openShift.staff||'Staff'}</div>
       <div class="fg2" style="margin-bottom:14px">
         <div><div style="font-size:9px;color:var(--mut);letter-spacing:2px;text-transform:uppercase">Started</div><div style="font-weight:700">${openShift.date} ${openShift.startTime}</div></div>
         <div><div style="font-size:9px;color:var(--mut);letter-spacing:2px;text-transform:uppercase">Duration</div><div style="font-weight:700;font-family:'Orbitron',sans-serif;color:var(--yellow)">${fmtDur(m)}</div></div>
@@ -4068,7 +3974,7 @@ function renderShifts(){
     currentEl.innerHTML=`<div style="background:var(--s2);border:1px solid var(--bdr);border-radius:12px;padding:16px;margin-bottom:12px">
       <div class="ct" style="margin-bottom:12px">Open New Shift</div>
       <div class="fg2">
-        <div class="fg"><label>Staff Name</label><input type="text" id="shift-staff" value="${currentStaff?.name||''}" readonly style="opacity:.75;cursor:not-allowed" title="Picked up from your signed-in account — use the header badge to switch user if this is wrong"></div>
+        <div class="fg"><label>Staff Name</label><input type="text" id="shift-staff" placeholder="Your name"></div>
         <div class="fg"><label>Date</label><input type="date" id="shift-date"></div>
         <div class="fg"><label>Start Time</label><input type="time" id="shift-start"></div>
         <div class="fg"><label>Starting Cash Float</label><input type="number" id="shift-startcash" min="0" step="0.01" value="0" placeholder="Cash in drawer at start"></div>
@@ -4093,9 +3999,9 @@ function renderShifts(){
     const canUndoClose=s.date===todayStr()&&!S.shifts.find(x=>!x.end); // same-day only, and no other shift currently open
     return `<div style="background:var(--s2);border:1px solid var(--bdr);border-radius:12px;padding:13px;margin-bottom:8px;animation:slideIn .25s ease">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <div class="shift-num">${s.shiftNumber||'?'}</div>
+        <div class="shift-num">${closed.length-i}</div>
         <div class="shift-info" style="flex:1">
-          <div class="shift-name">Shift #${s.shiftNumber||'?'} — ${s.staff||'—'}</div>
+          <div class="shift-name">${s.staff||'—'}</div>
           <div class="shift-meta">${s.date} &nbsp; ${s.startTime} → ${s.endTime||'?'} &nbsp; ${fmtDur(mins)}</div>
         </div>
         <div class="shift-rev">${fmt(totalCash)}</div>
@@ -4141,13 +4047,9 @@ function openShift(){
   const startTime=document.getElementById('shift-start')?.value;
   const startingCash=parseFloat(document.getElementById('shift-startcash')?.value)||0;
   if(!date||!startTime){toast('⚠ Fill all fields',true);return;}
-  // v2.9.28: sequential shift number, persistent counter so numbers never
-  // reuse or collide even if an old shift gets deleted later.
-  const shiftNumber=S.settings.nextShiftNumber||1;
-  S.settings.nextShiftNumber=shiftNumber+1;
-  S.shifts.push({id:uid(),shiftNumber,staff:staff||'Staff',date,startTime,startTs:Date.now(),end:null,endTime:null,endTs:null,startingCash});
-  persist();renderShifts();toast('✓ Shift #'+shiftNumber+' opened');
-  logActivity('open_shift',`Opened shift #${shiftNumber} — starting cash ${fmt(startingCash)}`);
+  S.shifts.push({id:uid(),staff:staff||'Staff',date,startTime,startTs:Date.now(),end:null,endTime:null,endTs:null,startingCash});
+  persist();renderShifts();toast('✓ Shift opened');
+  logActivity('open_shift',`Opened shift — starting cash ${fmt(startingCash)}`);
 }
 function showCloseShiftRecon(){
   const el=document.getElementById('close-shift-recon');if(!el) return;

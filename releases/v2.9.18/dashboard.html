@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Drift Zone — Remote Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050510;--sur:#0d0d2b;--s2:#12123a;--bdr:#1e1e5a;--txt:#e0e8ff;--mut:#6070a0;
+  --accent:#00d4ff;--purple:#c084fc;--green:#00ffaa;--yellow:#ffd600;--red:#ff2d78;--orange:#ff8c00;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:'Rajdhani',sans-serif;min-height:100vh;padding:16px;padding-bottom:40px}
+.logo{font-family:'Orbitron',sans-serif;font-weight:900;font-size:26px;text-align:center;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--accent),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{text-align:center;font-size:10px;color:var(--mut);letter-spacing:3px;text-transform:uppercase;margin-bottom:20px}
+.card{background:var(--sur);border:1px solid var(--bdr);border-radius:14px;padding:16px;margin-bottom:12px}
+.ct{font-size:9px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;margin-bottom:10px}
+.big-stat{font-family:'Orbitron',sans-serif;font-size:32px;font-weight:900;color:var(--accent)}
+.stat-label{font-size:11px;color:var(--mut);margin-top:2px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bdr)}
+.row:last-child{border-bottom:none}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.b-green{background:rgba(0,255,170,.12);color:var(--green)}
+.b-red{background:rgba(255,45,120,.12);color:var(--red)}
+.b-orange{background:rgba(255,140,0,.12);color:var(--orange)}
+.b-mut{background:rgba(96,112,160,.15);color:var(--mut)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#setup{max-width:400px;margin:60px auto 0}
+#setup input{width:100%;background:var(--s2);border:1px solid var(--bdr);color:var(--txt);border-radius:9px;padding:11px;font-size:14px;margin-bottom:10px;font-family:inherit}
+#setup label{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px}
+#setup button{width:100%;background:linear-gradient(135deg,var(--accent),#0088aa);color:#001a22;border:none;border-radius:9px;padding:13px;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:1px}
+.pdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+#status-line{text-align:center;font-size:10px;color:var(--mut);margin-bottom:16px}
+.empty{text-align:center;padding:20px;color:var(--mut);font-size:12px}
+#err{color:var(--red);font-size:12px;text-align:center;margin-top:10px;display:none}
+#gear{position:fixed;top:14px;right:14px;background:var(--s2);border:1px solid var(--bdr);color:var(--mut);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px}
+</style>
+</head>
+<body>
+
+<div id="gear" onclick="showSetup()" title="Change connection">⚙</div>
+
+<div id="setup" style="display:none">
+  <div class="logo">DRIFT ZONE</div>
+  <div class="sub">Remote Dashboard</div>
+  <div class="card">
+    <label>Firebase API Key</label>
+    <input type="text" id="s-apikey" placeholder="AIzaSy...">
+    <label>Firebase Project ID</label>
+    <input type="text" id="s-projectid" placeholder="e.g. my-cafe-12345">
+    <label>Dashboard Access Code</label>
+    <input type="text" id="s-code" placeholder="the code you set in the app's Settings">
+    <button onclick="connect()">Connect</button>
+    <div id="err"></div>
+  </div>
+  <p style="font-size:10px;color:var(--mut);text-align:center;margin-top:14px">
+    Get these values from Drift Zone → Settings → 📡 Remote Dashboard on your café's computer.
+    This page only reads data — it can't change anything in the café app.
+  </p>
+</div>
+
+<div id="dash" style="display:none">
+  <div class="logo" id="d-cafename">DRIFT ZONE</div>
+  <div id="status-line"><span class="pdot"></span>Live</div>
+
+  <div class="card">
+    <div class="ct">Today's Revenue</div>
+    <div class="big-stat" id="d-revenue">—</div>
+    <div class="stat-label" id="d-revenue-sub">—</div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:12px">
+    <div class="card" style="margin-bottom:0">
+      <div class="ct">Shift</div>
+      <div id="d-shift-status" style="font-size:14px;font-weight:700">—</div>
+      <div class="stat-label" id="d-shift-sub">—</div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="ct">Stations</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:22px;font-weight:900;color:var(--purple)" id="d-stations-count">—</div>
+      <div class="stat-label">occupied</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">🎮 Active Stations</div>
+    <div id="d-stations-list"><div class="empty">No stations occupied right now</div></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">📦 Low Stock</div>
+    <div id="d-lowstock-list"><div class="empty">Nothing low right now</div></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">💰 Last Cash Reconciliation</div>
+    <div id="d-recon"><div class="empty">No recent shift close data</div></div>
+  </div>
+
+  <div style="text-align:center;font-size:9px;color:var(--mut);margin-top:14px" id="d-updated">—</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const saved = JSON.parse(localStorage.getItem('dz_dashboard_conn') || 'null');
+
+window.showSetup = function(){
+  document.getElementById('dash').style.display = 'none';
+  document.getElementById('setup').style.display = 'block';
+  if (saved) {
+    document.getElementById('s-apikey').value = saved.apiKey || '';
+    document.getElementById('s-projectid').value = saved.projectId || '';
+    document.getElementById('s-code').value = saved.code || '';
+  }
+};
+
+window.connect = function(){
+  const apiKey = document.getElementById('s-apikey').value.trim();
+  const projectId = document.getElementById('s-projectid').value.trim();
+  const code = document.getElementById('s-code').value.trim();
+  const errEl = document.getElementById('err');
+  errEl.style.display = 'none';
+  if (!apiKey || !projectId || !code) {
+    errEl.textContent = '⚠ Fill in all three fields';
+    errEl.style.display = 'block';
+    return;
+  }
+  localStorage.setItem('dz_dashboard_conn', JSON.stringify({ apiKey, projectId, code }));
+  startListening({ apiKey, projectId, code });
+};
+
+function fmtMoney(n){ return (n||0).toFixed(2); }
+
+function renderSummary(d){
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('dash').style.display = 'block';
+  document.getElementById('d-cafename').textContent = (d.cafeName || 'DRIFT ZONE').toUpperCase();
+
+  document.getElementById('d-revenue').textContent = fmtMoney(d.todayRevenue);
+  document.getElementById('d-revenue-sub').textContent =
+    `🎮 ${fmtMoney(d.gamingToday)} gaming · 🍟 ${fmtMoney(d.snackToday)} snacks — ${d.sessionsToday||0} sessions, ${d.ordersToday||0} orders`;
+
+  const shiftEl = document.getElementById('d-shift-status');
+  const shiftSub = document.getElementById('d-shift-sub');
+  if (d.shiftOpen) {
+    shiftEl.innerHTML = '<span class="badge b-green">● OPEN</span>';
+    shiftSub.textContent = `${d.shiftStaff || '—'} since ${d.shiftStart || '—'}`;
+  } else {
+    shiftEl.innerHTML = '<span class="badge b-mut">○ CLOSED</span>';
+    shiftSub.textContent = 'No active shift';
+  }
+
+  document.getElementById('d-stations-count').textContent = `${d.stationsOccupied||0}/${d.stationsTotal||0}`;
+
+  const stList = document.getElementById('d-stations-list');
+  if (d.stations && d.stations.length) {
+    stList.innerHTML = d.stations.map(s => `
+      <div class="row">
+        <div>
+          <div style="font-weight:700">${s.name} <span class="badge b-mut">${s.device}</span></div>
+          <div class="stat-label">${s.player || ''}</div>
+        </div>
+        <div style="text-align:right">
+          ${s.timeLeft !== null && s.timeLeft !== undefined
+            ? `<span class="badge ${s.timeLeft <= 5 ? 'b-red' : 'b-green'}">${s.timeLeft <= 0 ? 'TIME UP' : s.timeLeft + 'm left'}</span>`
+            : '<span class="badge b-mut">open time</span>'}
+        </div>
+      </div>`).join('');
+  } else {
+    stList.innerHTML = '<div class="empty">No stations occupied right now</div>';
+  }
+
+  const lowEl = document.getElementById('d-lowstock-list');
+  if (d.lowStock && d.lowStock.length) {
+    lowEl.innerHTML = d.lowStock.map(it => `
+      <div class="row">
+        <span>${it.name}</span>
+        <span class="badge ${it.stock <= 0 ? 'b-red' : 'b-orange'}">${it.stock} left</span>
+      </div>`).join('');
+  } else {
+    lowEl.innerHTML = '<div class="empty">Nothing low right now</div>';
+  }
+
+  const reconEl = document.getElementById('d-recon');
+  if (d.lastReconciliation) {
+    const r = d.lastReconciliation;
+    const matched = Math.abs(r.variance) < 0.01;
+    reconEl.innerHTML = `
+      <div class="row">
+        <span>${r.staff || '—'} · ${r.date || '—'}</span>
+        <span class="badge ${matched ? 'b-green' : (r.variance < 0 ? 'b-red' : 'b-orange')}">
+          ${matched ? '✓ Matched' : (r.variance < 0 ? 'SHORT ' : 'OVER ') + fmtMoney(Math.abs(r.variance))}
+        </span>
+      </div>`;
+  } else {
+    reconEl.innerHTML = '<div class="empty">No recent shift close data</div>';
+  }
+
+  if (d.updatedAt && d.updatedAt.toDate) {
+    document.getElementById('d-updated').textContent = 'Last updated ' + d.updatedAt.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  }
+}
+
+function startListening(conn){
+  try{
+    const app = initializeApp({ apiKey: conn.apiKey, projectId: conn.projectId, authDomain: `${conn.projectId}.firebaseapp.com` });
+    const db = getFirestore(app);
+    const ref = doc(db, 'dashboards', conn.code);
+    onSnapshot(ref, (snap) => {
+      if (snap.exists()) {
+        renderSummary(snap.data());
+      } else {
+        document.getElementById('setup').style.display = 'block';
+        document.getElementById('dash').style.display = 'none';
+        document.getElementById('err').textContent = '⚠ Connected, but no data yet — open Drift Zone on the café computer and let it sync once.';
+        document.getElementById('err').style.display = 'block';
+      }
+    }, (error) => {
+      document.getElementById('setup').style.display = 'block';
+      document.getElementById('dash').style.display = 'none';
+      document.getElementById('err').textContent = '⚠ Connection failed — check your API Key, Project ID, and that Firestore rules allow reading /dashboards/{code}';
+      document.getElementById('err').style.display = 'block';
+    });
+  }catch(e){
+    document.getElementById('err').textContent = '⚠ ' + e.message;
+    document.getElementById('err').style.display = 'block';
+  }
+}
+
+if (saved && saved.apiKey && saved.projectId && saved.code) {
+  startListening(saved);
+} else {
+  showSetup();
+}
+</script>
+</body>
+</html>

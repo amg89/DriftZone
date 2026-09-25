@@ -1,91 +1,96 @@
 # Drift Zone — Gaming Café Manager
 
-A single-file web app for running a PlayStation/gaming café: station sessions, snacks & drinks, client tabs, inventory with recipes, expenses, purchases, shifts, and profit reporting.
+Two apps live in this repo, for two different stages of the same café
+management system:
 
-**Current version: v2.9.25** (production — localStorage based)
+| | Local App | Cloud App |
+|---|---|---|
+| **Where** | repo root — [`drift-zone.html`](./drift-zone.html) | [`cloud/driftzone-cloud.html`](./cloud/driftzone-cloud.html) |
+| **Storage** | Browser `localStorage`, one device | Firebase Firestore, multi-device, multi-tenant |
+| **Status** | Mature, production, actively used | Newer — most features ported, real-time, multi-branch not yet built |
+| **Accounts / roles** | Staff PIN (soft — client-side only) | Firebase Auth + real server-side permission rules |
+| **Setup** | None — open the HTML file | Needs a free Firebase project (see [`cloud/README.md`](./cloud/README.md)) |
 
-> **Note:** the earlier v3.0.0/v3.1.0 Firebase multi-branch experiment has been **discontinued** in favor of continuing to mature this localStorage version. It's kept in `releases/` for reference only — do not build on top of it.
-
----
-
-## 🚀 Quick Start
-
-### Option A — Just open it (no install)
-
-Open `drift-zone.html` directly in any modern browser (Chrome, Safari, Edge). Works immediately.
-
-### Option B — Install as an app (PWA)
-
-1. Download `drift-zone.html`, `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png` into **one folder**
-2. Open `drift-zone.html` in Chrome
-3. Tap the **Install** banner that appears (or browser menu → "Install app")
-4. It now lives on your home screen like a native app, works offline
+They are **independent** — not two versions of the same file, not a
+migration path you switch over on. The local app keeps running exactly
+as it does today; the cloud app is a fresh rebuild aimed at multi-device
+sync, real permissions, and eventually a mobile app + SaaS layer. Fixes
+and features are tracked separately for each.
 
 ---
 
-## 📁 Repository Structure
+## 📱 Local App
 
-```
-drift-zone-app/
-├── drift-zone.html          ← CURRENT live version (always latest release)
-├── manifest.json             ← PWA config
-├── sw.js                     ← Service worker (offline support)
-├── icon-192.png / icon-512.png
-├── CHANGELOG.md              ← Full version history with details
-├── README.md                 ← This file
-└── releases/                 ← Every past version, frozen, for rollback
-    ├── v2.4.0/
-    ├── ...
-    ├── v2.9.25/
-    └── v3.1.0/                ← discontinued, kept for reference only
-```
+A single-file web app for running a PlayStation/gaming café: station
+sessions, snacks & drinks, client tabs, inventory with recipes,
+expenses, purchases, shifts, and profit reporting. No install, no
+server, no internet dependency for daily use.
 
-Each folder under `releases/` is a complete, working snapshot of the app at that version — fully self-contained.
+**Current version: v2.9.29**
 
-**⚠️ Do not roll back to `v2.9.18` or `v2.9.19`** — both contain a Remote Dashboard sync feature that caused real bugs (see CHANGELOG). Fully removed in v2.9.20.
+- Open `drift-zone.html` directly in any modern browser, or install it
+  as a PWA (see below).
+- Full version history: [`CHANGELOG.md`](./CHANGELOG.md)
+- Every past version, frozen and working, under [`releases/`](./releases/)
+- ⚠️ Do not roll back to `v2.9.18` or `v2.9.19` — see CHANGELOG.
 
----
+### Installing as a PWA
 
-## ⏪ How to Roll Back to a Previous Version
+The app references `manifest.json`, `sw.js`, and icon files for
+installable/offline support. **Those support files aren't included in
+this delivery** (they weren't in this session's file store) — the app
+works perfectly fine as a plain web page without them, you'd just be
+re-adding those three small files to get the "Install as app" /
+offline banner back. Ask if you'd like them regenerated.
 
-**If something breaks in the current version:**
+### Rolling back a version
 
-1. Go to `releases/` and find the last version you know worked (check `CHANGELOG.md` for what changed in each)
-2. Copy that folder's `drift-zone.html` to the repo root, replacing the current one
-3. Commit with a message like `"Rollback to v2.9.17 — v2.9.18 introduced sync bugs"`
+1. Find the last known-good version under `releases/`
+2. Copy that folder's `drift-zone.html` over the one at repo root
+3. Commit: `Rollback to vX.X.X — <reason>`
 
-**Using GitHub's web interface (no command line needed):**
-
-1. Click **Code** tab → navigate to `releases/vX.X.X/drift-zone.html` → click **Raw** → copy all the content
-2. Go to the root `drift-zone.html` → click pencil to edit → paste over everything → commit
-
-**Using Git (if you have it installed):**
-
-```bash
-git checkout main -- releases/v2.9.17/drift-zone.html
-cp releases/v2.9.17/drift-zone.html drift-zone.html
-git add drift-zone.html
-git commit -m "Rollback to v2.9.17"
-git push
-```
+(Or via GitHub's web UI: open `releases/vX.X.X/drift-zone.html` → Raw →
+copy → paste over the root file → commit.)
 
 ---
 
-## 🩺 If things stop updating without a manual refresh
+## ☁️ Cloud App
 
-As of v2.9.25, the app has real diagnostics for this. Go to **Settings → 📊 Storage Health**. If usage is high, tap **Clear Old Auto-Snapshots**. This was the root cause of a real incident — see the v2.9.25 changelog entry for details.
+A ground-up rebuild on Firebase — real multi-device sync, real
+server-side permission enforcement (not just hidden buttons), and the
+foundation for a mobile app and multi-tenant SaaS. Built fresh rather
+than migrated from the local app, using what the local app's bug
+history taught along the way (atomic writes, direct shift references,
+a flexible per-permission-key access model instead of a fixed role
+table).
+
+- App: [`cloud/driftzone-cloud.html`](./cloud/driftzone-cloud.html)
+- Security rules: [`cloud/firestore.rules`](./cloud/firestore.rules)
+- Data model + design notes: [`cloud/DATA_MODEL.md`](./cloud/DATA_MODEL.md)
+- Setup instructions: [`cloud/README.md`](./cloud/README.md)
+
+**Ported so far:** Stations/Sessions, Shifts, Inventory, Snacks/Checkout,
+Client Tabs, Purchases, Expenses, Staff & flexible permissions, Business
+Settings, Reports (sales/profit/item sales/valuation), Activity Log,
+real stock-movement history ("stock as of any date").
+
+**Not yet built:** multi-branch switching (currently one branch per
+account), the mobile app wrap, and the SaaS commercial layer
+(super-admin console, billing).
+
+This app has **no version-number/changelog discipline yet** the way the
+local app does — it's tracked as one evolving file for now. That's
+worth setting up once it's closer to daily-use-ready.
 
 ---
 
 ## 🧩 Tech Stack
 
-- Single HTML file — vanilla JS, no build step, no framework
-- [SheetJS (xlsx)](https://github.com/SheetJS/sheetjs) — Excel export, loaded via CDN
-- PWA manifest + service worker — installable, offline-capable
-- 100% localStorage — no server, no account required, no internet dependency for daily use
+**Local app:** vanilla JS, single HTML file, no build step, no
+framework. [SheetJS](https://github.com/SheetJS/sheetjs) via CDN for
+Excel export. 100% `localStorage`.
 
----
-
-## 📝 Changelog
-
-See [CHANGELOG.md](./CHANGELOG.md) for full version history.
+**Cloud app:** vanilla JS, single HTML file, no build step, no
+framework. Firebase Firestore + Firebase Auth (client SDK, ES modules
+loaded via CDN) — no Cloud Functions, deliberately free-plan (Spark)
+compatible.

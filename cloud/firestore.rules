@@ -1,0 +1,183 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ═══════════════════════════════════════════════════
+    // HELPERS — free-plan compatible: no Cloud Functions, no
+    // custom claims. Role/tenant/branch info lives on /users/{uid}
+    // and rules read it directly. One extra document read per
+    // check — negligible cost at café scale, still fully
+    // server-side enforced (a client can never fake these values).
+    // ═══════════════════════════════════════════════════
+    function isSignedIn() { return request.auth != null; }
+    function myUserDoc() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function myTenant() { return myUserDoc().tenantId; }
+    function myRole() { return myUserDoc().role; }
+    function myBranches() { return myUserDoc().branchIds; }
+    function isSuperAdmin() { return isSignedIn() && myRole() == 'superadmin'; }
+    function isOwner() { return isSignedIn() && myRole() == 'owner'; }
+    function isManagerOrAbove() { return isSignedIn() && (myRole() == 'owner' || myRole() == 'manager'); }
+    function hasPerm(key) {
+      // Owner/superadmin implicitly have everything. Everyone else is
+      // checked against their individual permissions map — set from a
+      // role-based default at invite time, but freely overridable per
+      // person afterward. This is the flexible, per-key system, not a
+      // fixed role table.
+      return isOwner() || isSuperAdmin() ||
+        (isSignedIn() && myUserDoc().permissions[key] == true);
+    }
+    function sameTenant(data) { return isSignedIn() && data.tenantId == myTenant(); }
+    function sameBranch(data) { return sameTenant(data) && (data.branchId in myBranches()); }
+    function tenantIsActive() { return get(/databases/$(database)/documents/tenants/$(myTenant())).data.status in ['trial','active']; }
+    function hasNoUserDocYet() { return !exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
+
+    // ── TENANTS ──
+    match /tenants/{tenantId} {
+      allow read: if isSuperAdmin() || (isSignedIn() && tenantId == myTenant());
+      allow create: if isSignedIn() && hasNoUserDocYet() &&
+        request.resource.data.status == 'trial' &&
+        request.resource.data.createdBy == request.auth.uid;
+      allow update: if isSuperAdmin() ||
+        (isOwner() && tenantId == myTenant() && request.resource.data.status == resource.data.status);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ── INVITES (staff join codes — replaces Cloud Function invite) ──
+    match /invites/{code} {
+      allow read: if isSignedIn();
+      allow create: if hasPerm('manage_staff') && request.resource.data.tenantId == myTenant() && request.resource.data.used == false;
+      allow update: if isSignedIn() && resource.data.used == false && request.resource.data.used == true &&
+        request.resource.data.tenantId == resource.data.tenantId &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.branchIds == resource.data.branchIds;
+      allow delete: if isManagerOrAbove() && resource.data.tenantId == myTenant();
+    }
+
+    // ── USERS ──
+    match /users/{userId} {
+      allow read: if isSuperAdmin() || (isSignedIn() && resource.data.tenantId == myTenant());
+      allow create: if isSuperAdmin() || (
+        userId == request.auth.uid && hasNoUserDocYet() && (
+          (request.resource.data.role == 'owner') ||
+          (request.resource.data.role in ['manager','staff'] &&
+           request.resource.data.inviteCode is string &&
+           get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.used == false &&
+           get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.tenantId == request.resource.data.tenantId &&
+           get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.role == request.resource.data.role &&
+           get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.branchIds == request.resource.data.branchIds)
+        )
+      );
+      allow update: if isSuperAdmin() || (hasPerm('manage_staff') && resource.data.tenantId == myTenant() && userId != request.auth.uid);
+      allow delete: if isSuperAdmin() || (hasPerm('manage_staff') && resource.data.tenantId == myTenant() && userId != request.auth.uid);
+    }
+
+    // ── BRANCHES ──
+    match /branches/{branchId} {
+      allow read: if isSuperAdmin() || sameTenant(resource.data);
+      allow create: if isSuperAdmin() ||
+        (isSignedIn() && hasNoUserDocYet() && request.resource.data.tenantId is string) ||
+        (isManagerOrAbove() && tenantIsActive() && request.resource.data.tenantId == myTenant());
+      allow update: if isSuperAdmin() || (isManagerOrAbove() && tenantIsActive() && sameTenant(resource.data) && (isOwner() || hasPerm('edit_settings')));
+      allow delete: if isSuperAdmin() || (isOwner() && sameTenant(resource.data));
+    }
+
+    // ── OPERATIONAL DATA (shared shape) ──
+    function opRead(data) { return isSuperAdmin() || sameBranch(data); }
+    function opCreate() {
+      return isSuperAdmin() ||
+        (isSignedIn() && tenantIsActive() &&
+         request.resource.data.tenantId == myTenant() &&
+         request.resource.data.branchId in myBranches());
+    }
+    // Ordinary operational updates (closing a session, adding a snack to a
+    // tab, decrementing stock on a sale) happen constantly and are done by
+    // EVERY role, staff included — that's normal café work, not a
+    // privileged action. Gating this to managers-only (as an earlier draft
+    // of this file did) would have silently blocked staff from completing
+    // checkouts and closing sessions. The specific privileged actions
+    // (discounts, voids, editing prices, deleting inventory items) are
+    // gated separately below via hasPerm(), which is the real boundary.
+    function opWrite(data) { return isSuperAdmin() || (isSignedIn() && tenantIsActive() && sameBranch(data)); }
+    // Reserved for records that genuinely should stay manager+-only even
+    // for routine edits (purchases, expenses — financial records with no
+    // per-staff permission key yet).
+    function opManage(data) { return isSuperAdmin() || (isManagerOrAbove() && tenantIsActive() && sameBranch(data)); }
+
+    // A session or order can only be created against a shift that is
+    // genuinely open right now, on the same branch — this is the
+    // server-side half of the "no sales without an open shift" rule
+    // (the app also checks this client-side, but that's just UX;
+    // this is what actually stops it).
+    function hasValidOpenShift() {
+      return 'shiftId' in request.resource.data &&
+        exists(/databases/$(database)/documents/shifts/$(request.resource.data.shiftId)) &&
+        get(/databases/$(database)/documents/shifts/$(request.resource.data.shiftId)).data.status == 'open' &&
+        get(/databases/$(database)/documents/shifts/$(request.resource.data.shiftId)).data.branchId == request.resource.data.branchId;
+    }
+
+    match /inventory/{id} {
+      allow read: if opRead(resource.data);
+      allow create: if opCreate() && hasPerm('manage_inventory_items');
+      // Refined: a stock-only change (what a sale, a tab, or a purchase
+      // does) is routine branch work and needs no special permission.
+      // Anything touching other fields (price, name, cat, recipe, etc.)
+      // is a real edit and needs edit_stock/edit_prices/manage_inventory_items,
+      // matching exactly what the Inventory tab's own UI already gates.
+      allow update: if opWrite(resource.data) &&
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock']) ||
+         hasPerm('edit_stock') || hasPerm('edit_prices') || hasPerm('manage_inventory_items'));
+      allow delete: if opWrite(resource.data) && hasPerm('manage_inventory_items');
+    }
+    match /stockMovements/{id} {
+      // Insert-only, same principle as the activity log — a stock
+      // history you can edit after the fact isn't trustworthy.
+      allow read: if opRead(resource.data);
+      allow create: if opCreate();
+      allow update, delete: if false;
+    }
+    match /sessions/{id} {
+      allow read: if opRead(resource.data);
+      allow create: if isSuperAdmin() || (opCreate() && hasValidOpenShift());
+      // Applying a discount/markup on close requires the specific
+      // permission, not just general branch-manager access.
+      allow update: if opWrite(resource.data) &&
+        (request.resource.data.adjustment == resource.data.adjustment || hasPerm('apply_discount'));
+      allow delete: if opWrite(resource.data) && hasPerm('void_transaction');
+    }
+    match /shifts/{id} {
+      allow read: if opRead(resource.data);
+      allow create: if opCreate();
+      allow update, delete: if opWrite(resource.data);
+    }
+    match /clientTabs/{id} {
+      allow read: if opRead(resource.data);
+      allow create: if isSuperAdmin() || (opCreate() && hasValidOpenShift());
+      allow update: if opWrite(resource.data);
+      allow delete: if opWrite(resource.data) && hasPerm('void_transaction');
+    }
+    match /snackOrders/{id} {
+      allow read: if opRead(resource.data);
+      allow create: if isSuperAdmin() || (opCreate() && hasValidOpenShift());
+      allow update: if opWrite(resource.data);
+      allow delete: if opWrite(resource.data) && hasPerm('void_transaction');
+    }
+    match /purchases/{id} {
+      allow read: if opRead(resource.data);
+      allow create: if opCreate();
+      allow update, delete: if opManage(resource.data);
+    }
+    match /expenses/{id} {
+      allow read: if opRead(resource.data);
+      allow create: if opCreate();
+      allow update, delete: if opManage(resource.data);
+    }
+
+    // ── ACTIVITY LOG — insert-only, no exceptions ──
+    match /activityLog/{id} {
+      allow read: if isSuperAdmin() || (isManagerOrAbove() && sameTenant(resource.data));
+      allow create: if isSuperAdmin() || (isSignedIn() && request.resource.data.tenantId == myTenant() && request.resource.data.uid == request.auth.uid);
+      allow update, delete: if false;
+    }
+  }
+}
