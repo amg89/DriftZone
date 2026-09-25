@@ -1,4 +1,5 @@
 rules_version = '2';
+// Drift Zone Cloud rules — v1.0.1 (see cloud/CHANGELOG.md)
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -25,12 +26,17 @@ service cloud.firestore {
       // person afterward. This is the flexible, per-key system, not a
       // fixed role table.
       return isOwner() || isSuperAdmin() ||
-        (isSignedIn() && myUserDoc().permissions[key] == true);
+        (isSignedIn() && myUserDoc().get('permissions', {}).get(key, false) == true);
     }
     function sameTenant(data) { return isSignedIn() && data.tenantId == myTenant(); }
     function sameBranch(data) { return sameTenant(data) && (data.branchId in myBranches()); }
     function tenantIsActive() { return get(/databases/$(database)/documents/tenants/$(myTenant())).data.status in ['trial','active']; }
     function hasNoUserDocYet() { return !exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    // v1.0.1: "I created this tenant" — the only way to become its owner.
+    function iCreatedTenant(tid) {
+      return exists(/databases/$(database)/documents/tenants/$(tid)) &&
+        get(/databases/$(database)/documents/tenants/$(tid)).data.createdBy == request.auth.uid;
+    }
 
     // ── TENANTS ──
     match /tenants/{tenantId} {
@@ -45,9 +51,17 @@ service cloud.firestore {
 
     // ── INVITES (staff join codes — replaces Cloud Function invite) ──
     match /invites/{code} {
-      allow read: if isSignedIn();
+      // v1.0.1: fetch ONE invite by its code only — listing all invites
+      // (which exposed every business's tenantId/branchIds) is limited to
+      // that tenant's staff managers.
+      allow get: if isSignedIn();
+      allow list: if hasPerm('manage_staff') && resource.data.tenantId == myTenant();
       allow create: if hasPerm('manage_staff') && request.resource.data.tenantId == myTenant() && request.resource.data.used == false;
+      // v1.0.1: only the person who just joined WITH this code can mark it used
+      // (was: anyone signed in could burn any unused invite).
       allow update: if isSignedIn() && resource.data.used == false && request.resource.data.used == true &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        myUserDoc().get('inviteCode', '') == code &&
         request.resource.data.tenantId == resource.data.tenantId &&
         request.resource.data.role == resource.data.role &&
         request.resource.data.branchIds == resource.data.branchIds;
@@ -56,10 +70,14 @@ service cloud.firestore {
 
     // ── USERS ──
     match /users/{userId} {
-      allow read: if isSuperAdmin() || (isSignedIn() && resource.data.tenantId == myTenant());
+      // v1.0.1: you can always read your OWN doc (even before it exists —
+      // signup/join check for it; resource.data on a missing doc was a denial).
+      allow read: if (isSignedIn() && userId == request.auth.uid) ||
+        isSuperAdmin() || (isSignedIn() && resource.data.tenantId == myTenant());
       allow create: if isSuperAdmin() || (
         userId == request.auth.uid && hasNoUserDocYet() && (
-          (request.resource.data.role == 'owner') ||
+          // v1.0.1: 'owner' only of a tenant YOU created (was: owner of any tenantId)
+          (request.resource.data.role == 'owner' && iCreatedTenant(request.resource.data.tenantId)) ||
           (request.resource.data.role in ['manager','staff'] &&
            request.resource.data.inviteCode is string &&
            get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.used == false &&
@@ -68,17 +86,29 @@ service cloud.firestore {
            get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.branchIds == request.resource.data.branchIds)
         )
       );
-      allow update: if isSuperAdmin() || (hasPerm('manage_staff') && resource.data.tenantId == myTenant() && userId != request.auth.uid);
-      allow delete: if isSuperAdmin() || (hasPerm('manage_staff') && resource.data.tenantId == myTenant() && userId != request.auth.uid);
+      // v1.0.1: staff managers may change ONLY someone's permissions — never
+      // their role/tenant/branches — and never touch an owner's account.
+      allow update: if isSuperAdmin() || (hasPerm('manage_staff') && resource.data.tenantId == myTenant() &&
+        userId != request.auth.uid && resource.data.role != 'owner' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['permissions']));
+      allow delete: if isSuperAdmin() || (hasPerm('manage_staff') && resource.data.tenantId == myTenant() &&
+        userId != request.auth.uid && resource.data.role != 'owner');
     }
 
     // ── BRANCHES ──
     match /branches/{branchId} {
       allow read: if isSuperAdmin() || sameTenant(resource.data);
       allow create: if isSuperAdmin() ||
-        (isSignedIn() && hasNoUserDocYet() && request.resource.data.tenantId is string) ||
+        // v1.0.1: first branch only for a tenant YOU created (was: any tenantId)
+        (isSignedIn() && hasNoUserDocYet() && request.resource.data.tenantId is string && iCreatedTenant(request.resource.data.tenantId)) ||
         (isManagerOrAbove() && tenantIsActive() && request.resource.data.tenantId == myTenant());
-      allow update: if isSuperAdmin() || (isManagerOrAbove() && tenantIsActive() && sameTenant(resource.data) && (isOwner() || hasPerm('edit_settings')));
+      allow update: if isSuperAdmin() || (isManagerOrAbove() && tenantIsActive() && sameTenant(resource.data) && (isOwner() || hasPerm('edit_settings'))) ||
+        // v1.0.1: opening a shift bumps the shift counter — any member of THIS
+        // branch may do exactly that (+1, nothing else). Was blocked for staff
+        // and for managers without edit_settings, so they couldn't open shifts.
+        (isSignedIn() && tenantIsActive() && sameTenant(resource.data) && branchId in myBranches() &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nextShiftNumber']) &&
+         request.resource.data.nextShiftNumber == resource.data.get('nextShiftNumber', 1) + 1);
       allow delete: if isSuperAdmin() || (isOwner() && sameTenant(resource.data));
     }
 
@@ -124,9 +154,18 @@ service cloud.firestore {
       // Anything touching other fields (price, name, cat, recipe, etc.)
       // is a real edit and needs edit_stock/edit_prices/manage_inventory_items,
       // matching exactly what the Inventory tab's own UI already gates.
+      // v1.0.1: each permission now unlocks only its own fields (was: edit_stock
+      // — on by default for staff — allowed editing prices/names too).
+      //   stock only            → any branch member (sales, tabs, purchases, recounts)
+      //   + price / cost        → edit_prices
+      //   anything else         → manage_inventory_items
+      // tenantId/branchId can never be moved.
       allow update: if opWrite(resource.data) &&
+        request.resource.data.tenantId == resource.data.tenantId &&
+        request.resource.data.branchId == resource.data.branchId &&
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock']) ||
-         hasPerm('edit_stock') || hasPerm('edit_prices') || hasPerm('manage_inventory_items'));
+         (hasPerm('edit_prices') && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock','price','cost'])) ||
+         hasPerm('manage_inventory_items'));
       allow delete: if opWrite(resource.data) && hasPerm('manage_inventory_items');
     }
     match /stockMovements/{id} {
@@ -142,7 +181,10 @@ service cloud.firestore {
       // Applying a discount/markup on close requires the specific
       // permission, not just general branch-manager access.
       allow update: if opWrite(resource.data) &&
-        (request.resource.data.adjustment == resource.data.adjustment || hasPerm('apply_discount'));
+        // v1.0.1: .get() with default 0 — sessions opened before v1.0.1 have no
+        // 'adjustment' field, and reading a missing field made this deny every
+        // close by staff without apply_discount.
+        (request.resource.data.get('adjustment', 0) == resource.data.get('adjustment', 0) || hasPerm('apply_discount'));
       allow delete: if opWrite(resource.data) && hasPerm('void_transaction');
     }
     match /shifts/{id} {

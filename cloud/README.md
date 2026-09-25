@@ -1,57 +1,97 @@
-# Drift Zone Cloud
+# Drift Zone — Gaming Café Manager
 
-Multi-device, multi-tenant rebuild of Drift Zone on Firebase Firestore.
-See [`DATA_MODEL.md`](./DATA_MODEL.md) for the full schema and design
-reasoning; this file is just setup steps.
+Two apps live in this repo, for two different stages of the same café
+management system:
 
-## What you need
+| | Local App | Cloud App |
+|---|---|---|
+| **Where** | repo root — [`drift-zone.html`](./drift-zone.html) | [`cloud/driftzone-cloud.html`](./cloud/driftzone-cloud.html) |
+| **Storage** | Browser `localStorage`, one device | Firebase Firestore, multi-device, multi-tenant |
+| **Status** | Mature, production, actively used | Newer — most features ported, real-time, multi-branch not yet built |
+| **Accounts / roles** | Staff PIN (soft — client-side only) | Firebase Auth + real server-side permission rules |
+| **Setup** | None — open the HTML file | Needs a free Firebase project (see [`cloud/README.md`](./cloud/README.md)) |
 
-- A free Firebase project (the **Spark** plan — this app deliberately
-  needs no Cloud Functions, so it never requires upgrading to Blaze)
-- Firestore **Database** enabled, in **Native mode**
-- Firestore **Authentication** enabled, with the **Email/Password**
-  sign-in method turned on
+They are **independent** — not two versions of the same file, not a
+migration path you switch over on. The local app keeps running exactly
+as it does today; the cloud app is a fresh rebuild aimed at multi-device
+sync, real permissions, and eventually a mobile app + SaaS layer. Fixes
+and features are tracked separately for each.
 
-## First-time setup
+---
 
-1. Go to [console.firebase.google.com](https://console.firebase.google.com) → create a project (or use an existing one)
-2. **Build → Firestore Database → Create database** → start in production mode, pick a region
-3. **Build → Authentication → Get started → Sign-in method → Email/Password → Enable**
-4. **Build → Firestore Database → Rules tab** → paste in the entire contents of [`firestore.rules`](./firestore.rules) → **Publish**
-5. In **Project settings → General → Your apps**, add a Web app (if you haven't) and copy its **API Key** and **Project ID**
-6. Open `driftzone-cloud.html` in a browser — it will ask for those two values on first run and remember them (stored in that browser's `localStorage` as `dzc_config`)
-7. Sign up as the business owner (first account created for a business becomes `owner`)
+## 📱 Local App
 
-## Updating the rules later
+A single-file web app for running a PlayStation/gaming café: station
+sessions, snacks & drinks, client tabs, inventory with recipes,
+expenses, purchases, shifts, and profit reporting. No install, no
+server, no internet dependency for daily use.
 
-Any time `firestore.rules` changes in this repo, **paste the new file's
-entire contents** into Firebase Console → Firestore Database → Rules →
-Publish. The app doesn't push rules itself — Firestore rules are only
-ever set from the console (or the Firebase CLI, not used here).
+**Current version: v2.9.29**
 
-## Permission model, in short
+- Open `drift-zone.html` directly in any modern browser, or install it
+  as a PWA (see below).
+- Full version history: [`CHANGELOG.md`](./CHANGELOG.md)
+- Every past version, frozen and working, under [`releases/`](./releases/)
+- ⚠️ Do not roll back to `v2.9.18` or `v2.9.19` — see CHANGELOG.
 
-Every staff account gets a **default** bundle of permissions based on
-role (staff / manager / owner) at invite time, but every individual
-permission key can be freely overridden per person afterward from the
-Staff tab — it's not a fixed role table. The actual enforcement lives
-in `firestore.rules`, not in the app's UI — the UI only hides buttons
-for convenience; a person without a permission genuinely cannot write
-that data, even from the browser console. See `DATA_MODEL.md` →
-"Permissions" for the full key list and what each one gates.
+### Installing as a PWA
 
-## Known limitations (by design, for now)
+The app references `manifest.json`, `sw.js`, and icon files for
+installable/offline support. **Those support files aren't included in
+this delivery** (they weren't in this session's file store) — the app
+works perfectly fine as a plain web page without them, you'd just be
+re-adding those three small files to get the "Install as app" /
+offline banner back. Ask if you'd like them regenerated.
 
-- **One branch per account** — `branchIds[0]` is used directly; there's
-  no branch switcher yet even though the schema supports multiple
-  branches per tenant.
-- **No Cloud Functions** — a few things that would normally be
-  server-triggered (e.g. custom auth claims) are instead done via
-  documents the rules read directly (see `DATA_MODEL.md`). This keeps
-  the whole app on Firebase's free plan.
-- **Reports pull unfiltered-by-date, filter client-side** — every
-  report/history query filters only by `branchId` (an equality match)
-  and applies the date range in JavaScript afterward, specifically to
-  avoid needing a manual Firestore composite index for this repo to
-  work out of the box. Fine at café data volumes; revisit if it ever
-  gets slow.
+### Rolling back a version
+
+1. Find the last known-good version under `releases/`
+2. Copy that folder's `drift-zone.html` over the one at repo root
+3. Commit: `Rollback to vX.X.X — <reason>`
+
+(Or via GitHub's web UI: open `releases/vX.X.X/drift-zone.html` → Raw →
+copy → paste over the root file → commit.)
+
+---
+
+## ☁️ Cloud App
+
+A ground-up rebuild on Firebase — real multi-device sync, real
+server-side permission enforcement (not just hidden buttons), and the
+foundation for a mobile app and multi-tenant SaaS. Built fresh rather
+than migrated from the local app, using what the local app's bug
+history taught along the way (atomic writes, direct shift references,
+a flexible per-permission-key access model instead of a fixed role
+table).
+
+- App: [`cloud/driftzone-cloud.html`](./cloud/driftzone-cloud.html)
+- Security rules: [`cloud/firestore.rules`](./cloud/firestore.rules)
+- Data model + design notes: [`cloud/DATA_MODEL.md`](./cloud/DATA_MODEL.md)
+- Setup instructions: [`cloud/README.md`](./cloud/README.md)
+
+**Ported so far:** Stations/Sessions, Shifts, Inventory, Snacks/Checkout,
+Client Tabs, Purchases, Expenses, Staff & flexible permissions, Business
+Settings, Reports (sales/profit/item sales/valuation), Activity Log,
+real stock-movement history ("stock as of any date").
+
+**Not yet built:** multi-branch switching (currently one branch per
+account), the mobile app wrap, and the SaaS commercial layer
+(super-admin console, billing).
+
+**Current version: v1.0.1** — full history in
+[`cloud/CHANGELOG.md`](./cloud/CHANGELOG.md). The app and
+`firestore.rules` share one version number: always publish the matching
+rules when updating the HTML.
+
+---
+
+## 🧩 Tech Stack
+
+**Local app:** vanilla JS, single HTML file, no build step, no
+framework. [SheetJS](https://github.com/SheetJS/sheetjs) via CDN for
+Excel export. 100% `localStorage`.
+
+**Cloud app:** vanilla JS, single HTML file, no build step, no
+framework. Firebase Firestore + Firebase Auth (client SDK, ES modules
+loaded via CDN) — no Cloud Functions, deliberately free-plan (Spark)
+compatible.

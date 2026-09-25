@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>Drift Zone Cloud</title>
+<title>Drift Zone Cloud v1.0.1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -608,7 +608,9 @@ const PERM_LABELS = {
   manage_staff:'Manage staff', edit_settings:'Business settings'
 };
 
+const APP_VERSION='1.0.1'; // cloud app — see cloud/CHANGELOG.md. Requires firestore.rules v1.0.1.
 let db=null, authInst=null;
+let authSetupInProgress=false; // v1.0.1: true while signUp()/joinTeam() are writing the new account's docs
 
 function showStep(id){
   document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
@@ -648,6 +650,9 @@ async function handleAuthState(user){
   }
   const userSnap=await getDoc(doc(db,'users',user.uid));
   if(!userSnap.exists()){
+    // v1.0.1: signUp()/joinTeam() are mid-flight — they finish the setup
+    // and open the app themselves; don't yank the form away underneath them.
+    if(authSetupInProgress) return;
     // Auth account exists but signup never finished writing the user doc
     // (e.g. page closed mid-signup). Fail safely back to signup.
     showStep('step-signup');
@@ -662,6 +667,7 @@ function renderShell(userData, tenantData){
   document.getElementById('auth-wrap').style.display='none';
   document.getElementById('app-shell').style.display='block';
   document.getElementById('shell-business').textContent=(tenantData?.name||'—').toUpperCase();
+  document.getElementById('shell-business').title='Drift Zone Cloud v'+APP_VERSION;
   document.getElementById('shell-name').textContent=userData.name;
   const roleColors={owner:'b-green',manager:'b-mut',staff:'b-mut',superadmin:'b-red'};
   document.getElementById('shell-role-badge').innerHTML=
@@ -733,7 +739,7 @@ async function loadBranchAndListen(userData){
   // database enables: every signed-in device sees the same station
   // status update instantly, no manual refresh, no localStorage.
   if(sessionsUnsub) sessionsUnsub();
-  const q=query(collection(db,'sessions'), where('branchId','==',currentBranchId), where('status','==','open'));
+  const q=query(collection(db,'sessions'), where('tenantId','==',currentTenantId), where('branchId','==',currentBranchId), where('status','==','open'));
   sessionsUnsub=onSnapshot(q, snap=>{
     openSessions={};
     snap.forEach(d=>{ openSessions[d.data().stationIdx]={id:d.id,...d.data()}; });
@@ -748,7 +754,7 @@ async function loadBranchAndListen(userData){
   // Live listener on this branch's currently open shift — Stations and
   // Shifts panel both depend on knowing whether one is open.
   if(shiftUnsub) shiftUnsub();
-  const shiftQ=query(collection(db,'shifts'), where('branchId','==',currentBranchId), where('status','==','open'));
+  const shiftQ=query(collection(db,'shifts'), where('tenantId','==',currentTenantId), where('branchId','==',currentBranchId), where('status','==','open'));
   shiftUnsub=onSnapshot(shiftQ, snap=>{
     currentShift = snap.empty ? null : {id:snap.docs[0].id,...snap.docs[0].data()};
     renderShiftPanel();
@@ -757,7 +763,7 @@ async function loadBranchAndListen(userData){
 
   // Live inventory — every device sees stock changes instantly.
   if(inventoryUnsub) inventoryUnsub();
-  const invQ=query(collection(db,'inventory'), where('branchId','==',currentBranchId));
+  const invQ=query(collection(db,'inventory'), where('tenantId','==',currentTenantId), where('branchId','==',currentBranchId));
   inventoryUnsub=onSnapshot(invQ, snap=>{
     inventoryItems=[];
     snap.forEach(d=>inventoryItems.push({id:d.id,...d.data()}));
@@ -780,7 +786,7 @@ async function loadBranchAndListen(userData){
   // Live open tabs — same real-time upgrade as stations: any device
   // adding a snack to a customer's tab shows up everywhere instantly.
   if(tabsUnsub) tabsUnsub();
-  const tabsQ=query(collection(db,'clientTabs'), where('branchId','==',currentBranchId), where('status','==','open'));
+  const tabsQ=query(collection(db,'clientTabs'), where('tenantId','==',currentTenantId), where('branchId','==',currentBranchId), where('status','==','open'));
   tabsUnsub=onSnapshot(tabsQ, snap=>{
     openTabs=[];
     snap.forEach(d=>openTabs.push({id:d.id,...d.data()}));
@@ -798,7 +804,7 @@ async function loadBranchAndListen(userData){
   // Purchase history — no "open/closed" status on these, just every
   // record for the branch, newest first.
   if(purchasesUnsub) purchasesUnsub();
-  const purQ=query(collection(db,'purchases'), where('branchId','==',currentBranchId));
+  const purQ=query(collection(db,'purchases'), where('tenantId','==',currentTenantId), where('branchId','==',currentBranchId));
   purchasesUnsub=onSnapshot(purQ, snap=>{
     purchaseHistory=[];
     snap.forEach(d=>purchaseHistory.push({id:d.id,...d.data()}));
@@ -809,7 +815,7 @@ async function loadBranchAndListen(userData){
   // Expense history — same shape as purchases: every record for the
   // branch, no open/closed status.
   if(expensesUnsub) expensesUnsub();
-  const expQ=query(collection(db,'expenses'), where('branchId','==',currentBranchId));
+  const expQ=query(collection(db,'expenses'), where('tenantId','==',currentTenantId), where('branchId','==',currentBranchId));
   expensesUnsub=onSnapshot(expQ, snap=>{
     expenseHistory=[];
     snap.forEach(d=>expenseHistory.push({id:d.id,...d.data()}));
@@ -830,16 +836,16 @@ function renderStationGrid(){
     if(os){
       html+=`<div class="station-card busy" onclick="closeSessionModal(${i})">
         <div class="si">${icons[i%icons.length]}</div>
-        <div class="sn">${name} <span class="badge b-red" style="font-size:8px">${type}</span></div>
+        <div class="sn">${esc(name)} <span class="badge b-red" style="font-size:8px">${esc(type)}</span></div>
         <div class="ss busy-txt">● IN USE</div>
-        <div class="sp">${os.player}</div>
+        <div class="sp">${esc(os.player)}</div>
         <div class="st" id="st-elapsed-${i}">--</div>
         <div class="sc" id="st-cost-${i}">--</div>
       </div>`;
     }else{
       html+=`<div class="station-card free" onclick="openSessionModal(${i})">
         <div class="si">${icons[i%icons.length]}</div>
-        <div class="sn">${name} <span class="badge b-mut" style="font-size:8px">${type}</span></div>
+        <div class="sn">${esc(name)} <span class="badge b-mut" style="font-size:8px">${esc(type)}</span></div>
         <div class="ss free-txt">○ FREE</div>
         <div class="sp" style="opacity:0">—</div>
         <div class="st" style="opacity:0">—</div>
@@ -877,6 +883,10 @@ function fmtMins(m){
   const h=Math.floor(m/60), mm=m%60;
   return h>0?`${h}h ${mm}m`:`${mm}m`;
 }
+// v1.0.1: escape any user-typed text before it goes into innerHTML —
+// names/descriptions are written by staff and rendered on the owner's
+// screen, so unescaped text was a script-injection path.
+function esc(v){ return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtMoney(n){ return (currentBranchData?.settings?.currency||'$')+Number(n).toFixed(2); }
 
 // Insert-only audit trail — "who did what", the thing that actually
@@ -948,7 +958,7 @@ window.openSessionModal=function(idx){
   document.getElementById('open-player').value='';
   const pkgs=s.timePackages||[{label:'Open',mins:0}];
   document.getElementById('open-pkg-row').innerHTML=pkgs.map((p,i)=>
-    `<div class="pkg-opt ${i===0?'sel':''}" data-i="${i}" onclick="selectPkg(this,${i})">${p.label}</div>`
+    `<div class="pkg-opt ${i===0?'sel':''}" data-i="${i}" onclick="selectPkg(this,${i})">${esc(p.label)}</div>`
   ).join('');
   document.getElementById('open-rate-display').textContent=fmtMoney(s.stationRates?.[idx]||s.defaultRate)+'/hr';
   document.getElementById('modal-open').classList.add('active');
@@ -972,7 +982,7 @@ window.confirmOpenSession=async function(){
       rate:s.stationRates?.[idx]||s.defaultRate,
       packageMins:pkg.mins, packageLabel:pkg.label,
       startTs:Date.now(), startedAt:serverTimestamp(),
-      openedBy:currentUserData.name,
+      openedBy:currentUserData.name, adjustment:0, // v1.0.1: rules compare this on close
       shiftId:currentShift.id, shiftNumber:currentShift.shiftNumber
     });
     logActivity('session_open', (s.stationNames?.[idx]||'Station '+(idx+1))+' · '+player);
@@ -998,8 +1008,8 @@ window.closeSessionModal=function(idx){
   selectedClosePayment='Cash';
   document.querySelectorAll('#close-pay-row .pay-opt').forEach(o=>o.classList.toggle('sel',o.dataset.pay==='Cash'));
   document.getElementById('close-custom').oninput=()=>{
-    const c=parseFloat(document.getElementById('close-custom').value);
-    document.getElementById('close-total').textContent=fmtMoney(c>0?c:calc);
+    const raw=document.getElementById('close-custom').value, c=parseFloat(raw);
+    document.getElementById('close-total').textContent=fmtMoney(raw!==''&&c>=0?c:calc); // v1.0.1: 0 = free
   };
   document.getElementById('modal-close').classList.add('active');
 };
@@ -1010,10 +1020,12 @@ window.selectClosePay=function(el){
 };
 window.confirmCloseSession=async function(){
   const os=openSessions[activeStationIdx];if(!os) return;
+  if(!currentShift){ alert('⚠ Open a shift first (Shifts tab) — the payment needs a shift to be counted in.'); return; }
   const mins=Math.floor((Date.now()-os.startTs)/60000);
   const calcGame=mins/60*os.rate;
-  const customVal=parseFloat(document.getElementById('close-custom').value);
-  const finalTotal=customVal>0?customVal:calcGame;
+  const customRaw=document.getElementById('close-custom').value;
+  const customVal=parseFloat(customRaw);
+  const finalTotal=(customRaw!==''&&customVal>=0)?customVal:calcGame; // v1.0.1: 0 allowed (free session)
   const adjustment=finalTotal-calcGame;
   // Same "actual charge" fix as the local app: if there's a manual
   // adjustment, Gaming Revenue reflects what was actually charged, not
@@ -1024,7 +1036,8 @@ window.confirmCloseSession=async function(){
     await updateDoc(doc(db,'sessions',activeSessionId),{
       status:'closed', endTs:Date.now(), endedAt:serverTimestamp(),
       mins, game, calcGame, total:finalTotal, adjustment,
-      payment:selectedClosePayment, closedBy:currentUserData.name
+      payment:selectedClosePayment, closedBy:currentUserData.name,
+      closeShiftId:currentShift.id, closeShiftNumber:currentShift.shiftNumber // v1.0.1: cash counts in the shift it was taken
     });
     logActivity('session_close', (os.station||'')+' · '+fmtMoney(finalTotal)+' · '+selectedClosePayment+(adjustment!==0?' (adjusted)':''));
     closeModal('modal-close');
@@ -1038,7 +1051,7 @@ function renderShiftPanel(){
   const el=document.getElementById('shift-current-body');if(!el) return;
   if(currentShift){
     el.innerHTML=`
-      <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--green);margin-bottom:8px">● SHIFT #${currentShift.shiftNumber} OPEN — ${currentShift.staff}</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--green);margin-bottom:8px">● SHIFT #${currentShift.shiftNumber} OPEN — ${esc(currentShift.staff)}</div>
       <div class="summary-row"><span>Started</span><span>${new Date(currentShift.startTs).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></div>
       <div class="summary-row"><span>Starting Cash Float</span><span>${fmtMoney(currentShift.startingCash||0)}</span></div>
       <button class="btn-p" onclick="openCloseShiftModal()" style="margin-top:10px">■ Close Shift</button>
@@ -1047,7 +1060,7 @@ function renderShiftPanel(){
     el.innerHTML=`
       <p style="font-size:11px;color:var(--mut);margin-bottom:10px">No active shift. Open one before taking any orders.</p>
       <label>Staff Name</label>
-      <input type="text" id="os-staff" value="${currentUserData?.name||''}" readonly style="opacity:.75;cursor:not-allowed">
+      <input type="text" id="os-staff" value="${esc(currentUserData?.name||'')}" readonly style="opacity:.75;cursor:not-allowed">
       <label>Starting Cash Float</label>
       <input type="number" id="os-float" value="0" step="0.01" min="0" placeholder="Cash in drawer at start">
       <button class="btn-g" onclick="confirmOpenShift()" style="margin-top:6px">▶ Open Shift</button>
@@ -1088,14 +1101,36 @@ window.openCloseShiftModal=async function(){
   document.getElementById('sc-cashsales').textContent='Calculating…';
   document.getElementById('sc-expected').textContent='—';
   document.getElementById('sc-actual').value='';
-  document.getElementById('modal-shift-close').classList.add('active');
-  // Cash sales during this shift — direct shiftId query, no time-window
-  // guessing needed (the local app's version has to reconstruct this
-  // from timestamps; here it's just stored).
-  const q=query(collection(db,'sessions'), where('shiftId','==',currentShift.id), where('payment','==','Cash'));
-  const snap=await getDocs(q);
+  const modalEl=document.getElementById('modal-shift-close');
+  delete modalEl.dataset.expected; // v1.0.1: never reuse a stale/missing figure
+  modalEl.classList.add('active');
+  // v1.0.1: cash taken IN this shift = sessions CLOSED in it (closeShiftId,
+  // falling back to shiftId for sessions closed before v1.0.1) + snack
+  // orders / paid tabs recorded in it. Every query carries tenantId +
+  // branchId so the security rules accept it.
+  const shiftId=currentShift.id;
+  const base=[where('tenantId','==',currentTenantId), where('branchId','==',currentBranchId)];
   let cashTotal=0;
-  snap.forEach(d=>{ cashTotal+=d.data().total||0; });
+  try{
+    const [openedIn, closedIn, orders]=await Promise.all([
+      getDocs(query(collection(db,'sessions'), ...base, where('shiftId','==',shiftId))),
+      getDocs(query(collection(db,'sessions'), ...base, where('closeShiftId','==',shiftId))),
+      getDocs(query(collection(db,'snackOrders'), ...base, where('shiftId','==',shiftId)))
+    ]);
+    const seen=new Set();
+    [openedIn, closedIn].forEach(snap=>snap.forEach(d=>{
+      if(seen.has(d.id)) return; seen.add(d.id);
+      const s=d.data();
+      if(s.status!=='closed' || s.payment!=='Cash') return;
+      if((s.closeShiftId||s.shiftId)!==shiftId) return;
+      cashTotal+=s.total||0;
+    }));
+    orders.forEach(d=>{ const o=d.data(); if(o.payment==='Cash') cashTotal+=o.total||0; });
+  }catch(e){
+    document.getElementById('sc-cashsales').textContent='Error';
+    alert('Could not calculate cash sales: '+e.message);
+    return;
+  }
   const expected=(currentShift.startingCash||0)+cashTotal;
   document.getElementById('sc-cashsales').textContent=fmtMoney(cashTotal);
   document.getElementById('sc-expected').textContent=fmtMoney(expected);
@@ -1107,7 +1142,9 @@ window.confirmCloseShift=async function(){
   const actualInput=document.getElementById('sc-actual').value;
   const actual=parseFloat(actualInput);
   if(actualInput===''||isNaN(actual)){ alert('⚠ Enter the actual cash counted before closing'); return; }
-  const expected=parseFloat(document.getElementById('modal-shift-close').dataset.expected)||0;
+  const expectedRaw=document.getElementById('modal-shift-close').dataset.expected;
+  if(expectedRaw===undefined){ alert('⚠ Expected cash is still calculating (or failed) — reopen Close Shift.'); return; }
+  const expected=parseFloat(expectedRaw)||0;
   const variance=actual-expected;
   try{
     await updateDoc(doc(db,'shifts',currentShift.id),{
@@ -1123,7 +1160,7 @@ window.confirmCloseShift=async function(){
 
 async function renderShiftHistory(){
   const el=document.getElementById('shift-history-body');if(!el||!currentBranchId) return;
-  const q=query(collection(db,'shifts'), where('branchId','==',currentBranchId), where('status','==','closed'));
+  const q=query(collection(db,'shifts'), where('tenantId','==',currentTenantId), where('branchId','==',currentBranchId), where('status','==','closed'));
   const snap=await getDocs(q);
   const shifts=[];
   snap.forEach(d=>shifts.push({id:d.id,...d.data()}));
@@ -1135,7 +1172,7 @@ async function renderShiftHistory(){
     const vClass=matched?'var(--green)':(s.cashVariance<0?'var(--red)':'var(--orange)');
     const vText=matched?'✓ Matched':((s.cashVariance<0?'SHORT ':'OVER ')+fmtMoney(Math.abs(s.cashVariance)));
     return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdr)">
-      <span>Shift #${s.shiftNumber} — ${s.staff}</span>
+      <span>Shift #${s.shiftNumber} — ${esc(s.staff)}</span>
       <span style="color:${vClass};font-weight:700">${vText}</span>
     </div>`;
   }).join('');
@@ -1170,10 +1207,10 @@ function renderInventoryList(){
     const out=it.stock<=0;
     const stockColor=out?'var(--red)':(low?'var(--orange)':'var(--green)');
     return `<div class="inv-row">
-      <div class="inv-icon">${it.icon||'📦'}</div>
+      <div class="inv-icon">${esc(it.icon||'📦')}</div>
       <div style="flex:1">
-        <div class="inv-name">${it.name}</div>
-        <div class="inv-meta">${it.cat} · Sale ${fmtMoney(it.price)} · Cost ${fmtMoney(it.cost)}</div>
+        <div class="inv-name">${esc(it.name)}</div>
+        <div class="inv-meta">${esc(it.cat)} · Sale ${fmtMoney(it.price)} · Cost ${fmtMoney(it.cost)}</div>
       </div>
       <div class="inv-stock" style="color:${stockColor}">${it.stock}${out?' ❌':(low?' ⚠':'')}</div>
       <div class="inv-actions">
@@ -1284,8 +1321,8 @@ function renderSnackMenu(){
     const qty=cart[it.id]||0;
     return `<div class="menu-item ${oos?'oos':''} ${qty>0?'sel':''}" onclick="${oos?'':'addToCart(\''+it.id+'\')'}">
       ${qty>0?`<div class="mi-qty">×${qty}</div>`:''}
-      <div class="mi-icon">${it.icon||'📦'}</div>
-      <div class="mi-name">${it.name}</div>
+      <div class="mi-icon">${esc(it.icon||'📦')}</div>
+      <div class="mi-name">${esc(it.name)}</div>
       <div class="mi-price">${fmtMoney(it.price)}</div>
     </div>`;
   }).join('');
@@ -1328,7 +1365,7 @@ function renderCart(){
     const it=inventoryItems.find(x=>x.id===id);if(!it) return '';
     const qty=cart[id];
     return `<div class="cart-row">
-      <span>${it.icon||'📦'} ${it.name}</span>
+      <span>${esc(it.icon||'📦')} ${esc(it.name)}</span>
       <div class="cart-qty-btns">
         <button class="qty-btn" onclick="adjustCartQty('${id}',-1)">−</button>
         <span>${qty}</span>
@@ -1423,7 +1460,7 @@ function renderTabsList(){
     const itemCount=Object.values(t.items||{}).reduce((s,it)=>s+(it.qty||0),0);
     return `<div class="inv-row" style="cursor:pointer" onclick="openTabModal('${t.id}')">
       <div style="flex:1">
-        <div style="font-weight:700;font-size:12px">${t.name}${t.stationName?' · '+t.stationName:''}</div>
+        <div style="font-weight:700;font-size:12px">${esc(t.name)}${esc(t.stationName?' · '+t.stationName:'')}</div>
         <div style="font-size:10px;color:var(--mut)">${itemCount} item${itemCount===1?'':'s'}</div>
       </div>
       <div style="font-family:'Orbitron',sans-serif;color:var(--green);font-weight:700">${fmtMoney(t.total||0)}</div>
@@ -1487,8 +1524,8 @@ function renderTabMenu(){
     const onTab=t?.items?.[it.id]?.qty||0;
     return `<div class="menu-item ${oos?'oos':''} ${onTab>0?'sel':''}" onclick="${oos?'':'addItemToTab(\''+it.id+'\')'}">
       ${onTab>0?`<div class="mi-qty">×${onTab}</div>`:''}
-      <div class="mi-icon">${it.icon||'📦'}</div>
-      <div class="mi-name">${it.name}</div>
+      <div class="mi-icon">${esc(it.icon||'📦')}</div>
+      <div class="mi-name">${esc(it.name)}</div>
       <div class="mi-price">${fmtMoney(it.price)}</div>
     </div>`;
   }).join('');
@@ -1504,7 +1541,7 @@ function renderTabItemsRows(){
     el.innerHTML='<div style="color:var(--mut);font-size:11px">No items added yet.</div>';
   }else{
     el.innerHTML=entries.map(([id,it])=>`<div class="cart-row">
-      <span>${it.icon||'📦'} ${it.name}</span>
+      <span>${esc(it.icon||'📦')} ${esc(it.name)}</span>
       <div class="cart-qty-btns">
         <button class="qty-btn" onclick="adjustTabItemQty('${id}',-1)">−</button>
         <span>${it.qty}</span>
@@ -1585,6 +1622,7 @@ window.selectTabClosePay=function(el){
 window.confirmCloseTab=async function(){
   const t=openTabs.find(x=>x.id===activeTabId);
   if(!t) return;
+  if(!currentShift){ alert('⚠ Open a shift first (Shifts tab) before closing a tab.'); return; }
   try{
     const batch=writeBatch(db);
     // Stock for a tab's items was already deducted item-by-item as they
@@ -1602,8 +1640,10 @@ window.confirmCloseTab=async function(){
     // to tell them apart (a tab's stock was already handled above, not
     // at "checkout" time).
     batch.set(doc(collection(db,'snackOrders')), {
-      tenantId:currentTenantId, branchId:currentBranchId, shiftId:t.shiftId||currentShift?.id||null,
-      items:Object.values(t.items||{}), total:t.total||0, payment:selectedTabClosePay, isTab:true,
+      tenantId:currentTenantId, branchId:currentBranchId, shiftId:currentShift?.id||null, openShiftId:t.shiftId||null, // v1.0.1: settled in the CURRENT shift
+      items:Object.values(t.items||{}), total:selectedTabClosePay==='Waived'?0:(t.total||0), // v1.0.1: waived ≠ revenue
+      waivedAmount:selectedTabClosePay==='Waived'?(t.total||0):0,
+      payment:selectedTabClosePay, isTab:true,
       tabId:activeTabId, tabName:t.name,
       date:new Date().toISOString().slice(0,10), createdAt:serverTimestamp(),
       createdBy:currentUserData.name
@@ -1652,8 +1692,8 @@ function renderPurchasePicker(){
     const inCart=purchaseCart[it.id];
     return `<div class="menu-item ${inCart?'sel':''}" onclick="addToPurchase('${it.id}')">
       ${inCart?`<div class="mi-qty">×${inCart.qty}</div>`:''}
-      <div class="mi-icon">${it.icon||'📦'}</div>
-      <div class="mi-name">${it.name}</div>
+      <div class="mi-icon">${esc(it.icon||'📦')}</div>
+      <div class="mi-name">${esc(it.name)}</div>
       <div class="mi-price" style="color:var(--mut)">stock: ${it.stock}</div>
     </div>`;
   }).join('');
@@ -1700,7 +1740,7 @@ function renderPurchaseCartRows(){
     el.innerHTML='<div style="color:var(--mut);font-size:11px">No items added yet.</div>';
   }else{
     el.innerHTML=entries.map(([id,row])=>`<div class="cart-row">
-      <span>${row.icon||'📦'} ${row.name}</span>
+      <span>${esc(row.icon||'📦')} ${esc(row.name)}</span>
       <div class="cart-qty-btns">
         <button class="qty-btn" onclick="adjustPurchaseQty('${id}',-1)">−</button>
         <span>${row.qty}</span>
@@ -1749,8 +1789,8 @@ function renderPurchaseHistory(){
     const itemCount=(p.items||[]).reduce((s,x)=>s+x.qty,0);
     return `<div class="inv-row">
       <div style="flex:1">
-        <div style="font-weight:700;color:var(--txt)">${p.vendor||'—'} <span style="color:var(--mut);font-weight:400">· ${p.date}</span></div>
-        <div style="font-size:10px">${itemCount} unit${itemCount===1?'':'s'} · ${(p.items||[]).map(x=>x.name).join(', ')}</div>
+        <div style="font-weight:700;color:var(--txt)">${esc(p.vendor||'—')} <span style="color:var(--mut);font-weight:400">· ${p.date}</span></div>
+        <div style="font-size:10px">${itemCount} unit${itemCount===1?'':'s'} · ${esc((p.items||[]).map(x=>x.name).join(', '))}</div>
       </div>
       <div style="font-family:'Orbitron',sans-serif;color:var(--green);font-weight:700">${fmtMoney(p.total||0)}</div>
     </div>`;
@@ -1784,7 +1824,7 @@ function renderExpenseHistory(){
   document.getElementById('exp-month-total').textContent='This month: '+fmtMoney(monthTotal);
   el.innerHTML=expenseHistory.slice(0,15).map(e=>`<div class="inv-row">
     <div style="flex:1">
-      <div style="font-weight:700;color:var(--txt)">${e.desc} <span style="color:var(--mut);font-weight:400">· ${EXP_CAT_LABELS[e.cat]||e.cat} · ${e.date}</span></div>
+      <div style="font-weight:700;color:var(--txt)">${esc(e.desc)} <span style="color:var(--mut);font-weight:400">· ${esc(EXP_CAT_LABELS[e.cat]||e.cat)} · ${e.date}</span></div>
     </div>
     <div style="font-family:'Orbitron',sans-serif;color:var(--red);font-weight:700">-${fmtMoney(e.amount||0)}</div>
   </div>`).join('');
@@ -1811,10 +1851,10 @@ window.runReport=async function(){
   const toMs=new Date(toStr+'T23:59:59.999').getTime();
   try{
     const [sessSnap, orderSnap, purSnap, expSnap]=await Promise.all([
-      getDocs(query(collection(db,'sessions'), where('branchId','==',currentBranchId), where('status','==','closed'))),
-      getDocs(query(collection(db,'snackOrders'), where('branchId','==',currentBranchId))),
-      getDocs(query(collection(db,'purchases'), where('branchId','==',currentBranchId))),
-      getDocs(query(collection(db,'expenses'), where('branchId','==',currentBranchId)))
+      getDocs(query(collection(db,'sessions'), where('tenantId','==',currentTenantId), where('branchId','==',currentBranchId), where('status','==','closed'))),
+      getDocs(query(collection(db,'snackOrders'), where('tenantId','==',currentTenantId), where('branchId','==',currentBranchId))),
+      getDocs(query(collection(db,'purchases'), where('tenantId','==',currentTenantId), where('branchId','==',currentBranchId))),
+      getDocs(query(collection(db,'expenses'), where('tenantId','==',currentTenantId), where('branchId','==',currentBranchId)))
     ]);
     const sessions=[]; sessSnap.forEach(d=>sessions.push(d.data()));
     const sessionsInRange=sessions.filter(s=>s.endTs>=fromMs && s.endTs<=toMs);
@@ -1834,19 +1874,24 @@ window.runReport=async function(){
   }
 };
 
+// v1.0.1: a waived tab is given away, not sold — never revenue (also
+// covers waived tabs saved before v1.0.1 with their full total).
+function orderRevenue(o){ return o.payment==='Waived'?0:(o.total||0); }
 function renderReportSummary(sessions, orders){
   document.getElementById('rep-summary-card').style.display='block';
   const gaming=sessions.reduce((s,x)=>s+(x.total||0),0);
-  const snackTotal=orders.reduce((s,x)=>s+(x.total||0),0);
+  const snackTotal=orders.reduce((s,x)=>s+orderRevenue(x),0);
+  const waived=orders.filter(o=>o.payment==='Waived').reduce((s,x)=>s+(x.waivedAmount||x.total||0),0);
   const unpaid=orders.filter(o=>o.payment==='Unpaid').reduce((s,x)=>s+(x.total||0),0);
   const total=gaming+snackTotal;
   const byPay={};
-  [...sessions,...orders].forEach(r=>{ byPay[r.payment||'—']=(byPay[r.payment||'—']||0)+(r.total||0); });
+  [...sessions,...orders.filter(o=>o.payment!=='Waived')].forEach(r=>{ byPay[r.payment||'—']=(byPay[r.payment||'—']||0)+(r.total||0); });
   document.getElementById('rep-summary-body').innerHTML=`
     <div class="summary-row"><span>🎮 Gaming Revenue</span><span>${fmtMoney(gaming)}</span></div>
     <div class="summary-row"><span>🍟 Snacks / Drinks / Tabs</span><span>${fmtMoney(snackTotal)}</span></div>
     ${unpaid>0?`<div class="summary-row" style="color:var(--orange)"><span>　↳ of which still Unpaid</span><span>${fmtMoney(unpaid)}</span></div>`:''}
     <div class="summary-row total"><span>TOTAL REVENUE</span><span>${fmtMoney(total)}</span></div>
+    ${waived>0?`<div class="summary-row" style="color:var(--mut)"><span>🎁 Waived tabs (not counted above)</span><span>${fmtMoney(waived)}</span></div>`:''}
     <div style="font-size:11px;color:var(--mut);margin-top:10px;margin-bottom:2px">By Payment Method</div>
     ${Object.entries(byPay).map(([p,v])=>`<div class="summary-row"><span>${p}</span><span>${fmtMoney(v)}</span></div>`).join('')}
   `;
@@ -1857,7 +1902,7 @@ function renderReportProfit(sessions, orders, purchases, expenses){
   if(!myHasPerm('view_profit')){ card.style.display='none'; return; }
   card.style.display='block';
   const gaming=sessions.reduce((s,x)=>s+(x.total||0),0);
-  const snackTotal=orders.reduce((s,x)=>s+(x.total||0),0);
+  const snackTotal=orders.reduce((s,x)=>s+orderRevenue(x),0);
   const revenue=gaming+snackTotal;
   // COGS is estimated from each item's CURRENT cost, not a cost
   // snapshot at sale time (snackOrders only stores the sale price) — so
@@ -1887,11 +1932,11 @@ function renderReportItems(orders){
   orders.forEach(o=>(o.items||[]).forEach(it=>{
     if(!byItem[it.id]) byItem[it.id]={name:it.name, icon:it.icon, qty:0, revenue:0};
     byItem[it.id].qty+=it.qty;
-    byItem[it.id].revenue+=(it.total!=null?it.total:it.price*it.qty);
+    if(o.payment!=='Waived') byItem[it.id].revenue+=(it.total!=null?it.total:it.price*it.qty);
   }));
   const rows=Object.values(byItem).sort((a,b)=>b.revenue-a.revenue).slice(0,15);
   document.getElementById('rep-items-body').innerHTML = rows.length
-    ? rows.map(r=>`<div class="inv-row"><div style="flex:1"><div style="font-weight:700">${r.icon||'📦'} ${r.name}</div><div style="font-size:10px;color:var(--mut)">${r.qty} sold</div></div><div style="color:var(--green);font-weight:700">${fmtMoney(r.revenue)}</div></div>`).join('')
+    ? rows.map(r=>`<div class="inv-row"><div style="flex:1"><div style="font-weight:700">${esc(r.icon||'📦')} ${esc(r.name)}</div><div style="font-size:10px;color:var(--mut)">${r.qty} sold</div></div><div style="color:var(--green);font-weight:700">${fmtMoney(r.revenue)}</div></div>`).join('')
     : '<div style="color:var(--mut);font-size:11px">No item sales in this range.</div>';
 }
 
@@ -1931,13 +1976,13 @@ async function loadActivityLog(){
   if(!canView){ card.style.display='none'; return; }
   card.style.display='block';
   try{
-    const snap=await getDocs(query(collection(db,'activityLog'), where('branchId','==',currentBranchId)));
+    const snap=await getDocs(query(collection(db,'activityLog'), where('tenantId','==',currentTenantId), where('branchId','==',currentBranchId)));
     const rows=[]; snap.forEach(d=>rows.push(d.data()));
     rows.sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));
     const recent=rows.slice(0,50);
     document.getElementById('rep-activity-body').innerHTML = recent.length ? recent.map(r=>{
       const when=r.timestamp?.seconds?new Date(r.timestamp.seconds*1000).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
-      return `<div class="inv-row"><div style="flex:1"><div style="color:var(--txt)">${ACTIVITY_LABELS[r.action]||r.action}${r.detail?' — '+r.detail:''}</div><div style="font-size:10px">${r.actorName||'—'} · ${when}</div></div></div>`;
+      return `<div class="inv-row"><div style="flex:1"><div style="color:var(--txt)">${esc(ACTIVITY_LABELS[r.action]||r.action)}${esc(r.detail?' — '+r.detail:'')}</div><div style="font-size:10px">${esc(r.actorName||'—')} · ${when}</div></div></div>`;
     }).join('') : 'No activity recorded yet.';
   }catch(e){
     document.getElementById('rep-activity-body').innerHTML='Could not load activity log: '+e.message;
@@ -1954,7 +1999,7 @@ window.openStockHistory=async function(itemId){
   document.getElementById('sh-movements-body').innerHTML='Loading…';
   document.getElementById('modal-stock-history').classList.add('active');
   try{
-    const snap=await getDocs(query(collection(db,'stockMovements'), where('itemId','==',itemId)));
+    const snap=await getDocs(query(collection(db,'stockMovements'), where('tenantId','==',currentTenantId), where('branchId','==',currentBranchId), where('itemId','==',itemId)));
     stockHistoryMovements=[];
     snap.forEach(d=>stockHistoryMovements.push(d.data()));
     stockHistoryMovements.sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));
@@ -2017,7 +2062,7 @@ function renderStaffList(){
     const isSelfOrOwner=m.role==='owner';
     return `<div class="staff-row">
       <div style="flex:1">
-        <div style="font-weight:700;font-size:13px">${m.name}</div>
+        <div style="font-weight:700;font-size:13px">${esc(m.name)}</div>
         <span class="badge ${roleColors[m.role]||'b-mut'}" style="font-size:9px">${m.role.toUpperCase()}</span>
       </div>
       ${canManage&&!isSelfOrOwner?`<button class="icon-btn" onclick="openPermsModal('${m.id}')">Permissions</button>`:''}
@@ -2078,9 +2123,9 @@ window.buildStationEditors=function(){
     <div class="station-editor">
       <div class="station-editor-title">STATION ${i+1}</div>
       <div class="station-editor-grid">
-        <input type="text" id="se-name-${i}" placeholder="Name" value="${s.stationNames?.[i]||'Station '+(i+1)}">
+        <input type="text" id="se-name-${i}" placeholder="Name" value="${esc(s.stationNames?.[i]||'Station '+(i+1))}">
         <input type="number" id="se-rate-${i}" placeholder="Rate/hr" step="0.01" min="0" value="${s.stationRates?.[i]??s.defaultRate}">
-        <input type="text" id="se-type-${i}" placeholder="Device (PS5, SIM, etc)" value="${s.stationTypes?.[i]||'PS5'}">
+        <input type="text" id="se-type-${i}" placeholder="Device (PS5, SIM, etc)" value="${esc(s.stationTypes?.[i]||'PS5')}">
       </div>
     </div>
   `).join('');
@@ -2150,6 +2195,9 @@ window.signUp = async function(){
   if(password.length<6){ showErr('signup-err','Password must be at least 6 characters'); return; }
 
   let uid;
+  authSetupInProgress=true;
+  try{ await doSignUp(); } finally { authSetupInProgress=false; }
+  async function doSignUp(){
   try{
     const cred=await createUserWithEmailAndPassword(authInst,email,password);
     uid=cred.user.uid;
@@ -2204,10 +2252,12 @@ window.signUp = async function(){
     await setDoc(doc(collection(db,'activityLog')),{
       tenantId:tenantRef.id, branchId:branchRef.id, uid,
       action:'tenant_created', detail:`${ownerName} created business "${businessName}"`,
-      timestamp:new Date().toISOString()
+      timestamp:serverTimestamp() // v1.0.1: same type as every other log entry (was an ISO string → sorted wrong)
     });
+    await handleAuthState(authInst.currentUser); // v1.0.1: open the app now instead of leaving the signup form up
   }catch(e){
     showErr('signup-err','Account created, but business setup failed: '+e.message+' — try again, it will resume from here instead of starting over.');
+  }
   }
 };
 
@@ -2223,13 +2273,14 @@ window.joinTeam = async function(){
   const password=document.getElementById('jn-password').value;
   if(!code||!name||!email||!password){ showErr('join-err','Fill in every field'); return; }
 
-  const inviteSnap=await getDoc(doc(db,'invites',code));
-  if(!inviteSnap.exists()||inviteSnap.data().used){
-    showErr('join-err','Invalid or already-used invite code'); return;
-  }
-  const invite=inviteSnap.data();
-
+  // v1.0.1: the invite is read AFTER signing in (inside doJoin) — invites
+  // are only readable by signed-in users, so reading it first always
+  // failed for a brand-new staff member.
+  let invite=null;
   let uid;
+  authSetupInProgress=true;
+  try{ await doJoin(); } finally { authSetupInProgress=false; }
+  async function doJoin(){
   try{
     const cred=await createUserWithEmailAndPassword(authInst,email,password);
     uid=cred.user.uid;
@@ -2249,6 +2300,13 @@ window.joinTeam = async function(){
   }
 
   try{
+    const inviteSnap=await getDoc(doc(db,'invites',code));
+    if(!inviteSnap.exists()||inviteSnap.data().used){
+      const already=await getDoc(doc(db,'users',uid));
+      if(!already.exists()){ showErr('join-err','Invalid or already-used invite code — check it and try again with the same email/password.'); return; }
+    }else{
+      invite=inviteSnap.data();
+    }
     const existingUserSnap=await getDoc(doc(db,'users',uid));
     if(existingUserSnap.exists()){
       showErr('join-err','This account is already set up — signing you in…');
@@ -2261,8 +2319,10 @@ window.joinTeam = async function(){
       inviteCode:code, createdAt:new Date().toISOString()
     });
     await setDoc(doc(db,'invites',code),{...invite,used:true});
+    await handleAuthState(authInst.currentUser); // v1.0.1: open the app now
   }catch(e){
     showErr('join-err','Account created, but joining the team failed: '+e.message+' — try again, it will resume from here.');
+  }
   }
 };
 
